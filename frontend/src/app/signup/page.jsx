@@ -1,19 +1,44 @@
-'use client';
-import { useState } from 'react';
-import Link from 'next/link';
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import axios from "axios";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    licenseNumber: '',
-    password: '',
+    name: "",
+    email: "",
+    password: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Registering user:', formData);
-    // Add user registration API logic here
+
+    if (!formData.name) {
+      alert("please enter your name !");
+      return;
+    }
+    if (!formData.email) {
+      alert("please enter your email !");
+      return;
+    }
+    if (!formData.password) {
+      alert("please enter your password !");
+      return;
+    }
+    if (formData.password.length < 8) {
+      alert("password length should be 8 !");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/signup",
+        formData,
+      );
+      alert(response.data.message);
+    } catch (error) {
+      console.log(error);
+      alert("registration failed !");
+    }
   };
 
   return (
@@ -28,55 +53,73 @@ export default function SignUpPage() {
           <h1 className="text-3xl font-black tracking-tight">
             Patient<span className="text-cyan-400">Graph AI</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-2">Request platform access to analyze clinical data.</p>
+          <p className="text-sm text-slate-400 mt-2">
+            Request platform access to analyze clinical data.
+          </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Full Name</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Full Name
+            </label>
             <input
               type="text"
               required
               placeholder="Dr. Sarah Chen"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Work Email</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Work Email
+            </label>
             <input
               type="email"
               required
               placeholder="schen@research.org"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Medical License / ID</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Medical License / ID
+            </label>
             <input
               type="text"
               required
               placeholder="NPI or License Num"
               value={formData.licenseNumber}
-              onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, licenseNumber: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Password</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Password
+            </label>
             <input
               type="password"
               required
               placeholder="Minimum 8 characters"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
@@ -91,8 +134,11 @@ export default function SignUpPage() {
 
         {/* Footer Link */}
         <p className="text-sm text-center text-slate-400 mt-8">
-          Already registered?{' '}
-          <Link href="/login" className="text-cyan-400 font-semibold hover:underline">
+          Already registered?{" "}
+          <Link
+            href="/login"
+            className="text-cyan-400 font-semibold hover:underline"
+          >
             Sign In instead
           </Link>
         </p>

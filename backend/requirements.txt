@@ -9,4 +9,7 @@ langchain-google-genai
 langchain_text_splitters
 chromadb
 langchain_chroma    
-
+redis[hiredis]                      
+langchain-community
+asyncpg 
+langchain-experimental

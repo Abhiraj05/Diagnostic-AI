@@ -1,14 +1,34 @@
-'use client';
-import { useState } from 'react';
-import Link from 'next/link';
+"use client";
+import { useState } from "react";
+import Link from "next/link";
 
 export default function SignInPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Logging in with:', formData);
-    // Add authentication logic here
+    if (!formData.email) {
+      alert("please enter your email !");
+      return;
+    }
+    if (!formData.password) {
+      alert("please enter your password !");
+      return;
+    }
+    if (formData.password.length < 8) {
+      alert("password length should be 8 !");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/signin",
+        formData,
+      );
+      alert(response.data.message);
+    } catch (error) {
+      console.log(error);
+      alert("login failed !");
+    }
   };
 
   return (
@@ -23,27 +43,38 @@ export default function SignInPage() {
           <h1 className="text-3xl font-black tracking-tight">
             Patient<span className="text-cyan-400">Graph AI</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-2">Welcome back. Access your clinical workspace.</p>
+          <p className="text-sm text-slate-400 mt-2">
+            Welcome back. Access your clinical workspace.
+          </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Institutional Email</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Institutional Email
+            </label>
             <input
               type="email"
               required
               placeholder="name@hospital.org"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-slate-300">Password</label>
-              <Link href="/forgot-password" className="text-xs text-cyan-400 hover:underline">
+              <label className="text-sm font-semibold text-slate-300">
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-cyan-400 hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -52,7 +83,9 @@ export default function SignInPage() {
               required
               placeholder="••••••••"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
@@ -67,8 +100,11 @@ export default function SignInPage() {
 
         {/* Footer Link */}
         <p className="text-sm text-center text-slate-400 mt-8">
-          Don't have an account?{' '}
-          <Link href="/signup" className="text-cyan-400 font-semibold hover:underline">
+          Don't have an account?{" "}
+          <Link
+            href="/signup"
+            className="text-cyan-400 font-semibold hover:underline"
+          >
             Create an account
           </Link>
         </p>

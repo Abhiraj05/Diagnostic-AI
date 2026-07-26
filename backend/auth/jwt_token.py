@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from jwt import PyJWT, InvalidKeyError
-from schemas.userSchema import User
+from schemas.user_schema import UserSchema
 from db.db_connection import create_db_connection
 
 load_dotenv()
@@ -26,7 +26,7 @@ def get_current_user(token: str = Depends(oauth2scheme), db: Session = Depends(c
     try:
         payload = PyJWT.decode(token, SECRET_KEY, algorithm=[ALGORITHM])
         email = payload.get("sub")
-        user = db.query(User).filter(User.email == email).first()
+        user = db.query(UserSchema).filter(UserSchema.email == email).first()
         return user
     except InvalidKeyError:
         raise HTTPException(status_code=401)
