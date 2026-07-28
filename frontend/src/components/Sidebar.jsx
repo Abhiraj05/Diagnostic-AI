@@ -6,11 +6,11 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const links = [
-    { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
+    // { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
     { name: 'Upload Reports', href: '/intake', icon: 'upload_file' },
-    { name: 'Patient Search', href: '/search', icon: 'person_search' },
+    // { name: 'Patient Search', href: '/search', icon: 'person_search' },
     { name: 'Case Comparison', href: '/comparison', icon: 'compare_arrows' },
-    { name: 'AI Insights', href: '/insights', icon: 'psychology' },
+    // { name: 'AI Insights', href: '/insights', icon: 'psychology' },
     // { name: 'Knowledge Graph', href: '/knowledge-graph', icon: 'hub' },
     { name: 'Analytics', href: '/case-analysis', icon: 'analytics' },
     // { name: 'System Monitoring', href: '/system-operations', icon: 'monitoring' },
@@ -57,13 +57,12 @@ export default function Sidebar() {
         
         <div className="mt-6 flex items-center gap-3 px-2">
           <img 
-            alt="Dr. Sarah Chen" 
+            alt="S" 
             className="w-11 h-11 rounded-full object-cover border-2 border-slate-800" 
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBztv2IJU4-1cntPgmqXxcoULrNsCkFU7LloDY-58Wjs-TgA2grO1U-qKpi3pneiauxT2G-SfVAz8946CLXu1EPM_iX9tqSa88U0wl1exltuG1lzeyp6dS09_lwHiN-I-veyYY6wXCvUxi5Veg6PCyhuhJHbk4sYJqyS8HJ5G53FSkucSGe_y8hwjfETDOFD-GQogeSCOX58S_qntKO7jBArNeza1BOo3sVY2VrDXHHuiYvXLEngrXET1yE9ZBeecL387R_qnnf8pMz"
           />
           <div className="overflow-hidden">
-            <p className="font-bold text-base text-white truncate">Dr. Sarah Chen</p>
-            <p className="text-sm text-slate-400 truncate font-medium">Lead Researcher</p>
+            <p className="font-bold text-base text-white truncate">Sarah Chen</p>
           </div>
         </div>
       </div>

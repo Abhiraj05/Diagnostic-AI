@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import axios from "axios";
 
 export default function SignUpPage() {
@@ -9,7 +9,9 @@ export default function SignUpPage() {
     email: "",
     password: "",
   });
-
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -26,7 +28,7 @@ export default function SignUpPage() {
       return;
     }
     if (formData.password.length < 8) {
-      alert("password length should be 8 !");
+      alert("password length should be minimum 8 characters !");
       return;
     }
     try {
@@ -35,9 +37,11 @@ export default function SignUpPage() {
         formData,
       );
       alert(response.data.message);
+      return
     } catch (error) {
       console.log(error);
       alert("registration failed !");
+      return
     }
   };
 
@@ -51,7 +55,7 @@ export default function SignUpPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black tracking-tight">
-            Patient<span className="text-cyan-400">Graph AI</span>
+            Sign <span className="text-cyan-400">Up</span>
           </h1>
           <p className="text-sm text-slate-400 mt-2">
             Request platform access to analyze clinical data.
@@ -67,47 +71,28 @@ export default function SignUpPage() {
             <input
               type="text"
               required
-              placeholder="Dr. Sarah Chen"
+              name="name"
+              placeholder="Sarah Chen"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={handleChange}
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Work Email
+              Email
             </label>
             <input
               type="email"
               required
-              placeholder="schen@research.org"
+              name="email"
+              placeholder="sarahchen34@gmail.com"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              onChange={handleChange}
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Medical License / ID
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="NPI or License Num"
-              value={formData.licenseNumber}
-              onChange={(e) =>
-                setFormData({ ...formData, licenseNumber: e.target.value })
-              }
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">
               Password
@@ -115,11 +100,10 @@ export default function SignUpPage() {
             <input
               type="password"
               required
+              name="password"
               placeholder="Minimum 8 characters"
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
+              onChange={handleChange}
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
             />
           </div>
@@ -128,7 +112,7 @@ export default function SignUpPage() {
             type="submit"
             className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-xl font-bold transition duration-200 shadow-lg shadow-cyan-500/10 mt-4"
           >
-            Create Researcher Account
+            Create Account
           </button>
         </form>
 
