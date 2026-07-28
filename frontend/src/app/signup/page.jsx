@@ -136,7 +136,7 @@ export default function SignUpPage() {
         <p className="text-sm text-center text-slate-400 mt-8">
           Already registered?{" "}
           <Link
-            href="/login"
+            href="/signin"
             className="text-cyan-400 font-semibold hover:underline"
           >
             Sign In instead
