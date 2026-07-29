@@ -1,10 +1,19 @@
-
-'use client';
+"use client";
 import Sidebar from "@/components/Sidebar";
 
 const patients = [
-  { id:"PAT-8821", name:"Subject A", diagnosis:"Respiratory Infection", similarity:"94%" },
-  { id:"PAT-4902", name:"Subject B", diagnosis:"Viral Pneumonia", similarity:"88%" },
+  {
+    id: "PAT-8821",
+    name: "Subject A",
+    diagnosis: "Respiratory Infection",
+    similarity: "94%",
+  },
+  {
+    id: "PAT-4902",
+    name: "Subject B",
+    diagnosis: "Viral Pneumonia",
+    similarity: "88%",
+  },
 ];
 
 export default function Page() {
@@ -13,32 +22,33 @@ export default function Page() {
       <Sidebar />
 
       <main className="flex-1 lg:ml-72 flex flex-col">
-        <header className="sticky top-0 z-40 h-16 border-b border-slate-700 bg-slate-950/90 backdrop-blur flex items-center justify-between px-8">
-          <input
-            placeholder="Search Patient..."
-            className="w-80 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-white outline-none focus:border-cyan-400"
-          />
-          <div className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-cyan-300 text-sm">
-            AI Online
-          </div>
-        </header>
-
-        <div className="max-w-6xl mx-auto w-full p-8">
-
+        <div className="max-w-6xl mx-auto w-full p-8 mt-6">
+          <span className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300 mb-3">
+            Patient Details
+          </span>
           <h1 className="text-4xl font-bold">Patient Comparison</h1>
           <p className="text-slate-400 mt-2">
             Compare two patients using AI generated insights.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mt-8">
-            {patients.map((p)=>(
-              <div key={p.id} className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
+            {patients.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-2xl border border-slate-700 bg-slate-900 p-6"
+              >
                 <h2 className="text-xl font-semibold">{p.name}</h2>
                 <p className="text-slate-400 mt-1">{p.id}</p>
 
                 <div className="mt-5 space-y-2">
-                  <p><span className="text-cyan-400">Diagnosis:</span> {p.diagnosis}</p>
-                  <p><span className="text-cyan-400">Similarity:</span> {p.similarity}</p>
+                  <p>
+                    <span className="text-cyan-400">Diagnosis:</span>{" "}
+                    {p.diagnosis}
+                  </p>
+                  <p>
+                    <span className="text-cyan-400">Similarity:</span>{" "}
+                    {p.similarity}
+                  </p>
                 </div>
 
                 <button className="mt-6 rounded-xl bg-cyan-500 px-5 py-2 font-semibold text-slate-900 hover:bg-cyan-400">
@@ -84,11 +94,11 @@ export default function Page() {
           <div className="mt-8 rounded-2xl border border-slate-700 bg-slate-900 p-6">
             <h2 className="text-lg font-semibold text-cyan-400">AI Summary</h2>
             <p className="mt-3 text-slate-400 leading-7">
-              Subject A is responding better to treatment while Subject B requires
-              closer monitoring. Overall similarity between both cases is high.
+              Subject A is responding better to treatment while Subject B
+              requires closer monitoring. Overall similarity between both cases
+              is high.
             </p>
           </div>
-
         </div>
       </main>
     </div>

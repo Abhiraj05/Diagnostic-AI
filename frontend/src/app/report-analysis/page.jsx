@@ -8,35 +8,9 @@ export default function Page() {
       <Sidebar />
 
       <main className="flex-1 lg:ml-72 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-40 h-16 px-8 flex items-center justify-between border-b border-slate-700 bg-slate-950/90 backdrop-blur-xl">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search Patient..."
-              className="w-80 rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-white outline-none focus:border-cyan-400"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-cyan-300">
-            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-            <span className="text-sm font-medium">AI Engine: Online</span>
-          </div>
-        </header>
-
+        
         <div className="flex-1 p-8">
           <div className="max-w-6xl mx-auto">
-
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-              Back to Dashboard
-            </Link>
-
             <div className="mt-6 mb-8">
               <span className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300">
                 Patient Details

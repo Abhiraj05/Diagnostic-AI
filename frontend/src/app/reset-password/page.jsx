@@ -42,18 +42,18 @@ export default function ResetPassword() {
         formData,
       );
       alert(response.data.message);
-      return
+      return;
     } catch (error) {
       console.log(error);
       alert("failed to update new password !");
-      return
+      return;
     }
   };
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
         <div className="text-center">
-          <h1 className="text-4xl font-black text-white">
+          <h1 className="text-3xl font-black text-white tracking-tight">
             Reset
             <span className="text-cyan-400"> Password</span>
           </h1>
