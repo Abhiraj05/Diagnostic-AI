@@ -7,7 +7,7 @@ from db.db_connection import Base
 class ReportDetails(Base):
     __tablename__ = "report_details"
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     file_id =  Column(
         Integer,
         ForeignKey("uploaded_files.id"),

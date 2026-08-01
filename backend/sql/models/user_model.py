@@ -11,17 +11,21 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     password = Column(String, nullable=False)
-    
+
     uploaded_files = Relationship(
         "UploadedFile",
         back_populates="user",
         cascade="all, delete"
     )
-    
+
+    report_comparisons = Relationship(
+        "Comparison",
+        back_populates="user",
+        cascade="all, delete"
+    )
+
     chats = Relationship(
         "Chats",
         back_populates="user",
         cascade="all, delete"
     )
-    
-     
