@@ -47,7 +47,7 @@ app.add_middleware(
 async def create_user(user: UserSchema, db: AsyncSession = Depends(create_db_connection)):
     user_email = user.email
     user_password = user.password
-  
+
     try:
         old_user = db.query(User).filter(
             User.email == user_email.email).first()
@@ -98,7 +98,8 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
 
     try:
         if not file_name:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="file not found !")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="file not found !")
         is_old_doc = db.query(UploadedFile).filter(UploadedFile.user_id == current_user.id,
                                                    UploadedFile.file_name == file_name).first()
         if is_old_doc is not None:
@@ -324,6 +325,20 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
             is_user.password = hash_password(user_new_password)
             await db.commit()
             await db.refresh(is_user)
+            email_sub = "Password Reset Successful"
+            email_body = f"""
+            Hello,
+
+            Your password has been reset successfully for the account associated with email address {user_email}.
+
+            You can now log in using your new password.
+
+            If you did not make this change, please contact our support team immediately to secure your account.
+
+            Thank you,
+            Tech Team
+            """
+            await send_mail(email_sub, user_email, email_body)
             return {"message": "password reseted successfully !"}
 
     except:
@@ -333,7 +348,7 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
 
 # sends feedback mail
 @app.post("/feedback")
-async def send_feedback(feedback: Feedback, db: AsyncSession = Depends(create_db_connection)):
+async def send_feedback(feedback: Feedback):
     user_name = feedback.name
     user_email = feedback.email
     user_feedback = feedback.feedback
@@ -359,3 +374,15 @@ async def send_feedback(feedback: Feedback, db: AsyncSession = Depends(create_db
     except:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="failed to send feedback email !")
+
+
+# gets latests reports 
+@app.get("/get-reports")
+def get_reports():
+    print("get latest reports")
+
+
+# compare reports and generate summary
+@app.post("/compare-reports")
+def compare_reports():
+    print("compare reports")
