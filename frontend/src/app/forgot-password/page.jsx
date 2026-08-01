@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function ForgotPassword() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
   });
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -24,12 +27,14 @@ export default function ForgotPassword() {
         "http://127.0.0.1:8000/reset-password",
         formData,
       );
+      localStorage.setItem("email", formData.email);
       alert(response.data.message);
-      return
+      router.push("/verify-otp");
+      
     } catch (error) {
       console.log(error);
       alert("failed to send reset email !");
-      return
+      return;
     }
   };
 

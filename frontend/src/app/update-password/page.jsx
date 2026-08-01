@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 
 export default function ResetPassword() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -37,11 +40,17 @@ export default function ResetPassword() {
       return;
     }
     try {
+      const email = localStorage.getItem("email");
       const response = await axios.post(
         "http://127.0.0.1:8000/update-password",
-        formData,
+        {
+          email: email,
+          password: formData.password,
+        },
       );
+      localStorage.removeItem("email");
       alert(response.data.message);
+      router.push("/password-reset-success");
       return;
     } catch (error) {
       console.log(error);
