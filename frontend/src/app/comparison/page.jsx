@@ -16,7 +16,22 @@ const patients = [
   },
 ];
 
-export default function Page() {
+export default function ReportComparisonPage() {
+  const [latestReports, setLatestReports] = useState([]);
+
+  const getReportsData = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/get-latest-reports");
+      setLatestReports(response.data.latest_reports);
+    } catch (error) {
+      console.log(error);
+      // alert("failed to fetch reports history !")
+      return;
+    }
+  };
+  useEffect(() => {
+    getReportsData();
+  }, []);
   return (
     <div className="min-h-screen flex bg-slate-950 text-white">
       <Sidebar />

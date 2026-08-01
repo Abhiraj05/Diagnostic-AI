@@ -1,14 +1,31 @@
+"use client";
 
-import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-export default function Page() {
+export default function ReportAnalysisPage() {
+  const [reportsHistory, setReportHistory] = useState([]);
+
+  const getReportsData = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/get-reports-history");
+      setReportHistory(response.data.reports_history);
+    } catch (error) {
+      console.log(error);
+      // alert("failed to fetch reports history !")
+      return;
+    }
+  };
+  useEffect(() => {
+    getReportsData();
+  }, []);
+
   return (
     <div className="min-h-screen flex bg-slate-950 text-white">
       <Sidebar />
 
       <main className="flex-1 lg:ml-72 flex flex-col min-h-screen">
-        
         <div className="flex-1 p-8">
           <div className="max-w-6xl mx-auto">
             <div className="mt-6 mb-8">
@@ -24,9 +41,10 @@ export default function Page() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-
               <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
-                <h2 className="mb-4 text-lg font-semibold">Patient Information</h2>
+                <h2 className="mb-4 text-lg font-semibold">
+                  Patient Information
+                </h2>
 
                 <div className="space-y-3">
                   <div className="flex justify-between">
@@ -52,11 +70,13 @@ export default function Page() {
               </div>
 
               <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
-                <h2 className="mb-4 text-lg font-semibold text-cyan-400">AI Summary</h2>
+                <h2 className="mb-4 text-lg font-semibold text-cyan-400">
+                  AI Summary
+                </h2>
 
                 <p className="leading-7 text-slate-400">
-                  Patient shows signs of a mild respiratory infection.
-                  Continue medication and review after 48 hours.
+                  Patient shows signs of a mild respiratory infection. Continue
+                  medication and review after 48 hours.
                 </p>
               </div>
 
@@ -64,7 +84,7 @@ export default function Page() {
                 <h2 className="mb-4 text-lg font-semibold">Symptoms</h2>
 
                 <div className="flex flex-wrap gap-2">
-                  {["Fever","Cough","Fatigue"].map((item)=>(
+                  {["Fever", "Cough", "Fatigue"].map((item) => (
                     <span
                       key={item}
                       className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300"
@@ -83,7 +103,6 @@ export default function Page() {
                   <li>• Paracetamol 650mg</li>
                 </ul>
               </div>
-
             </div>
 
             <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-6">
@@ -113,7 +132,6 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
-
           </div>
         </div>
       </main>
