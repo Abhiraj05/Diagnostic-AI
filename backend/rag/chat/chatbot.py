@@ -13,6 +13,8 @@ structured_model2 = model.with_structured_output(SummaryOutput)
 structured_model3 = model.with_structured_output(ChatResponse)
 
 # extracts the report values from the document
+
+
 def extract_report_values(report_text):
     parser = StrOutputParser()
 
@@ -198,6 +200,139 @@ def answer_user_query(user_id, file_id, user_message, chat_history):
         "question": user_message,
         "chat_history": chat_history
     })
+
+    if not response:
+        return None
+    else:
+        return response
+
+
+# generates summary based on comparison of two report values
+def generate_comparison_summary(old_report_data, recent_report_data):
+    parser = StrOutputParser()
+    prompt = PromptTemplate(
+        template="""
+    You are an experienced medical report analysis assistant specializing in comparing laboratory reports over time.
+
+    The patient has provided two blood test reports:
+
+    ## Previous Blood Test Report:
+    {old_report_data}
+
+    ## Recent Blood Test Report:
+    {recent_report_data}
+
+    Your task is to analyze and compare both reports.
+
+    For every parameter available in either report:
+
+    1. Mention:
+    - Parameter name
+    - Previous value
+    - Recent value
+    - Difference/change between the two values
+
+    2. Explain:
+    - What the parameter measures.
+    - Whether the recent value is Normal, Low, High, or Borderline using standard adult reference ranges.
+
+    3. Analyze the trend:
+    - Improved compared to the previous report.
+    - Worsened compared to the previous report.
+    - Remained stable.
+    - New abnormal finding.
+    - Previously abnormal value that has improved or normalized.
+
+    4. If the recent value is abnormal or borderline:
+    - Explain possible reasons for the change.
+    - Describe potential health risks if the condition persists.
+    - Suggest precautions and lifestyle modifications.
+    - Recommend foods that may help improve the value.
+    - Mention when the patient should consult a healthcare professional.
+
+    5. If the recent value is normal:
+    - State that it is within the normal range.
+    - Explain whether it has improved, declined, or remained stable.
+    - Suggest ways to maintain healthy levels.
+
+    6. If a parameter exists only in one report:
+    - Mention that comparison is not possible.
+    - Analyze the available value separately.
+
+    7. If a value is missing, null, or unavailable:
+    - Clearly mention that the parameter could not be analyzed.
+
+    After analyzing all parameters, provide the following sections:
+
+    # Overall Health Comparison Summary
+    - Summarize the patient's health status based on changes between the old and recent reports.
+    - Mention major improvements.
+    - Mention areas that need attention.
+    - Describe whether overall health indicators are improving, declining, or stable.
+
+    # Progress Report
+    Create a summary of:
+    - Parameters that improved.
+    - Parameters that worsened.
+    - Parameters that remained unchanged.
+    - New abnormalities detected.
+
+    # Key Findings
+    List important findings in order of medical significance:
+    - Critical abnormalities.
+    - Borderline values.
+    - Positive improvements.
+
+    # Parameter-wise Comparison Table
+    Create a Markdown table with:
+    | Parameter | Previous Value | Recent Value | Change | Current Status | Trend |
+
+    # Diet Recommendations
+    Based on the comparison:
+    - Foods to include.
+    - Foods to limit or avoid.
+    - Nutritional suggestions for improving abnormal values.
+
+    # Lifestyle Recommendations
+    Include:
+    - Exercise recommendations.
+    - Sleep recommendations.
+    - Hydration.
+    - Stress management.
+    - Other healthy habits.
+
+    # Precautions
+    Mention:
+    - Things the patient should monitor.
+    - Any symptoms that should not be ignored.
+    - Situations where medical consultation is recommended.
+
+    # Follow-up Tests
+    Suggest additional tests only if they may be useful based on:
+    - Newly abnormal findings.
+    - Persistent abnormalities.
+    - Worsening trends.
+
+    Guidelines:
+    - Use simple patient-friendly language.
+    - Compare trends clearly rather than only analyzing individual values.
+    - Be accurate and evidence-based.
+    - Do not provide a definitive diagnosis.
+    - Do not prescribe medications.
+    - Consider standard adult reference ranges.
+    - Clearly mention that laboratory ranges may vary by lab.
+    - If the recent report is generally healthy, mention that the patient is maintaining good health and provide preventive advice.
+    - Avoid alarming language; explain findings in a balanced manner.
+
+    Respond using Markdown with clear headings, bullet points, and comparison tables.
+    """,
+        input_variables=["old_report_data", "recent_report_data"],
+    )
+
+    final_chain = prompt | structured_model2 | parser
+    response = final_chain.invoke({
+        "old_report_data": old_report_data,
+        "recent_report_data": recent_report_data})
 
     if not response:
         return None

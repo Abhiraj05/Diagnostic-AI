@@ -4,10 +4,16 @@ from db.db_connection import Base
 
 
 # comparison model
-class Comparison(Base):
+class ReportComparison(Base):
     __tablename__ = "comparisons"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
     previous_report_id = Column(Integer,
                                 ForeignKey("report_details.id"),
                                 nullable=False,
