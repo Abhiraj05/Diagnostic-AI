@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, WebSocket, WebSocketDisconnect, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, WebSocket, WebSocketDisconnect, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from middleware.cors import middleware
 from schemas.user_schema import UserSchema
 from schemas.mail_schema import MailSchema
 from schemas.feedback_schema import FeedbackSchema
@@ -37,22 +37,16 @@ app = FastAPI()
 # redis client connection
 redis = redis_connection()
 
-# allowed origins
-origins = ["http://localhost:3000"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+# middleware
+middleware(app)
 
 # checks whether new or older user & then register's user
 @app.post("/auth/signup")
-async def create_user(user: UserSchema, db: AsyncSession = Depends(create_db_connection)):
+async def create_user(user: UserSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
+    user_name = user.name
     user_email = user.email
+    user_gender = user.gender
+    user_age = user.age
     user_password = user.password
 
     try:
@@ -61,11 +55,29 @@ async def create_user(user: UserSchema, db: AsyncSession = Depends(create_db_con
         is_old_user = old_user_data.first()
 
         if is_old_user is None:
-            new_user = User(email=user_email,
+            new_user = User(name=user_name, email=user_email, gender=user_gender, age=user_age,
                             password=hash_password(user_password))
             db.add(new_user)
             await db.commit()
             await db.refresh(new_user)
+
+            email_sub = "Registration Successful"
+            email_body = f"""
+            Hello {user_name},
+
+            Your registration has been completed successfully, and your account has been activated.
+
+            You can now sign in and access our services.
+
+            If you have any questions or require assistance, please don't hesitate to contact our support team.
+
+            Thank you for choosing us.
+
+            Best regards,
+            Tech Team
+            """
+            background_tasks.add_task(
+                send_mail, email_sub, user_email, email_body)
 
             return {"message": "registered successfully !"}
 
@@ -98,8 +110,8 @@ async def login(user: UserSchema, db: AsyncSession = Depends(create_db_connectio
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="login failed !")
-        
-        
+
+
 # deletes user account & its history
 @app.delete("/auth/delete")
 async def delete_profile(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
@@ -147,7 +159,7 @@ async def update_profile(user: UserSchema, current_user=Depends(get_current_user
 
 # sends reset password mail
 @app.post("/auth/reset-password")
-async def reset_password(email: MailSchema, db: AsyncSession = Depends(create_db_connection)):
+async def reset_password(email: MailSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
     recipient_email = email.recipient_email
 
     try:
@@ -177,7 +189,8 @@ async def reset_password(email: MailSchema, db: AsyncSession = Depends(create_db
             Thank you,
             Tech Team
             """
-            await send_mail(email_sub, recipient_email, email_body)
+            background_tasks.add_task(
+                send_mail, email_sub, recipient_email, email_body)
 
             return {"message": "reset password mail sent successfully !"}
 
@@ -210,7 +223,7 @@ async def verify_otp(data: VerifyOtpSchema):
 
 # update password
 @app.post("/auth/update-password")
-async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends(create_db_connection)):
+async def update_password(data: SetNewPasswordSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
     user_email = data.email
     user_new_password = data.password
 
@@ -238,7 +251,10 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
             Thank you,
             Tech Team
             """
-            await send_mail(email_sub, user_email, email_body)
+
+            background_tasks.add_task(
+                send_mail, email_sub, user_email, email_body)
+
             return {"message": "password updated successfully !"}
 
     except:
@@ -248,7 +264,7 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
 
 # sends feedback mail
 @app.post("/public/feedback")
-async def send_feedback(feedback: FeedbackSchema):
+async def send_feedback(feedback: FeedbackSchema, background_tasks: BackgroundTasks):
     user_name = feedback.name
     user_email = feedback.email
     user_feedback = feedback.feedback
@@ -269,7 +285,9 @@ async def send_feedback(feedback: FeedbackSchema):
             Best regards,
             {user_name}
             """
-        await send_mail(email_sub, user_email, email_body)
+
+        background_tasks.add_task(send_mail, email_sub, user_email, email_body)
+
         return {"message": "feedback sent successfully !"}
 
     except:
@@ -463,7 +481,6 @@ async def delete_chat(id: int, current_user=Depends(get_current_user), db: Async
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to delete chat history !")
-
 
 
 # gets latests report
