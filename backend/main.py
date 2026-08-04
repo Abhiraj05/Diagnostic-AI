@@ -9,7 +9,7 @@ from schemas.verify_otp import VerifyOtpSchema
 from schemas.set_new_password import SetNewPasswordSchema
 from schemas.report_schema import ReportDetailsSchema
 from schemas.file_schema import UploadedFileSchema
-from schemas.chats_schema import chatsSchema
+from schemas.chats_schema import ChatsSchema
 from sql.models.user_model import User
 from sql.models.file_model import UploadedFile
 from sql.models.report_model import ReportDetails
@@ -454,7 +454,7 @@ async def get_chats(id: int, current_user=Depends(get_current_user), db: AsyncSe
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="chats history not found !")
         else:
-            chats_history = chatsSchema(is_chats)
+            chats_history = ChatsSchema(is_chats)
             return {"message": "chats history fetched successfully !", "chats_history": chats_history}
     except:
         raise HTTPException(
