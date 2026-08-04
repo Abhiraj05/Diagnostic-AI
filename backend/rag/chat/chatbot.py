@@ -13,8 +13,6 @@ structured_model2 = model.with_structured_output(SummaryOutput)
 structured_model3 = model.with_structured_output(ChatResponse)
 
 # extracts the report values from the document
-
-
 def extract_report_values(report_text):
     parser = StrOutputParser()
 

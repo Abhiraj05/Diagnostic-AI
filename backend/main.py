@@ -170,7 +170,7 @@ async def reset_password(email: MailSchema, background_tasks: BackgroundTasks, d
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
         else:
-            otp = generate_otp()
+            otp = str(generate_otp())
             redis = redis_connection()
             redis.set(otp_key(recipient_email), otp, ex=60)
             email_sub = "Reset Your Password"
@@ -515,7 +515,7 @@ async def get_reports(current_user=Depends(get_current_user), db: AsyncSession =
     user_id = current_user.id
 
     try:
-        reports_query = (select(UploadedFile, ReportDetails)
+        reports_query = (select(ReportDetails)
                          .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
                          .where(UploadedFile.user_id == user_id)
                          .order_by(desc(UploadedFile.upload_date))
