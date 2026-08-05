@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, Text, ForeignKey
+from sqlalchemy import Column, Integer, Float, Text, ForeignKey
 from sqlalchemy.orm import Relationship
 from db.db_connection import Base
 
@@ -7,12 +7,12 @@ from db.db_connection import Base
 class ReportDetails(Base):
     __tablename__ = "report_details"
 
-    id = Column(String, primary_key=True, index=True)
-    file_id =  Column(
+    id = Column(Integer, primary_key=True, index=True)
+    file_id = Column(
         Integer,
         ForeignKey("uploaded_files.id"),
         nullable=False,
-        index=True
+        unique=True
     )
     extracted_text = Column(Text, nullable=True)
     summary_text = Column(Text, nullable=True)
@@ -31,8 +31,8 @@ class ReportDetails(Base):
     alt_sgpt = Column(Float, nullable=True)
     tsh = Column(Float, nullable=True)
     vitamin_d = Column(Float, nullable=True)
-    
-    uploaded_files=Relationship(
+
+    uploaded_files = Relationship(
         "UploadedFile",
         back_populates="report"
     )
