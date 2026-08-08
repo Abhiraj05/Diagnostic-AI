@@ -585,3 +585,105 @@ async def compare_reports(current_user=Depends(get_current_user), db: AsyncSessi
     except:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="failed to fetch lastest reports !")
+
+
+@app.get('/report-analysis')
+async def display_report_analysis(current_user = Depends(get_current_user) , db : AsyncSession = Depends(create_db_connection)):
+    user_id = current_user.id
+
+    try:
+        data_query = (select(ReportDetails)
+                      .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
+                      .where(UploadedFile.user_id == user_id)
+                      .order_by(desc(UploadedFile.upload_date)).limit(1))
+
+        report_data = await db.execute(data_query)
+        is_report_data = report_data.scalars().first()
+        if is_report_data is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="reports not found !")
+        else:
+            return{
+                "Patient":{
+                    "name": current_user.name,
+                    "age":current_user.age,
+                    "gender": current_user.gender,
+                    "patient_id" : current_user.id,
+                    "email" : current_user.email
+                },
+                "summary": is_report_data.summary_text,
+
+                "symptoms": [],
+
+                "medications": [],
+
+                "lab_results": {
+                "hemoglobin": report.hemoglobin,
+                "wbc_count": report.wbc_count,
+                "platelet_count": report.platelet_count,
+                "blood_sugar": report.blood_sugar,
+                "hba1c": report.hba1c,
+                "total_cholesterol": report.total_cholesterol,
+                "hdl_cholesterol": report.hdl_cholesterol,
+                "ldl_cholesterol": report.ldl_cholesterol,
+                "triglycerides": report.triglycerides,
+                "creatinine": report.creatinine,
+                "egfr": report.egfr,
+                "ast_sgot": report.ast_sgot,
+                "alt_sgpt": report.alt_sgpt,
+                "tsh": report.tsh,
+                "vitamin_d": report.vitamin_d
+        }
+            }
+    except:
+          raise HTTPException(
+              status_code=status.HTTP_400_BAD_REQUEST, detail="failed to fetch lastest report !")
+
+
+@app.get('/report_comparison')
+async def display_report_comparison(current_user: Depends(get_current_user), db:AsyncSession = Depends(create_db_connection)):
+    user_id = current_user.id
+    try:
+        data_query = (select(ReportDetails)
+                      .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
+                      .where(UploadedFile.user_id == user_id)
+                      .order_by(desc(upload_file.upload_date)).limit(2))
+
+        comparison_data = await db.execute(data_query)
+        is_comparison_data = comparison_data.first()
+
+        if is_comparison_data is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="reports not found !")
+        else:
+            recent_report = ReportDetailsSchema.model_validate(is_comparison_data[0])
+            previous_report = ReportDetailsSchema.model_validate(is_comparison_data[1])
+            summary_query = (select(ReportComparison)
+                             .where(ReportComparison.user_id == user_id, ReportComparison.new_report_id == recent_report, ReportComparison.previous_report_id == previous_report))
+            summary_data = await db.execute(summary_query)
+            is_summary_data = summary_query.scalars().first()
+            if is_summary_data is None:
+                raise HTTPException(
+              status_code=status.HTTP_400_BAD_REQUEST, detail="failed to fetch comparison summary !")
+            else:
+                return{
+                    "lab_results": {
+                                    "hemoglobin": report.hemoglobin,
+                                    "wbc_count": report.wbc_count,
+                                    "platelet_count": report.platelet_count,
+                                    "blood_sugar": report.blood_sugar,
+                                    "hba1c": report.hba1c,
+                                    "total_cholesterol": report.total_cholesterol,
+                                    "hdl_cholesterol": report.hdl_cholesterol,
+                                    "ldl_cholesterol": report.ldl_cholesterol,
+                                    "triglycerides": report.triglycerides,
+                                    "creatinine": report.creatinine,
+                                    "egfr": report.egfr,
+                                    "ast_sgot": report.ast_sgot,
+                                    "alt_sgpt": report.alt_sgpt,
+                                    "tsh": report.tsh,
+                                    "vitamin_d": report.vitamin_d
+                            },
+                            "summary":is_summary_data.summary
+                }
+    except:
+        raise HTTPException(
+              status_code=status.HTTP_400_BAD_REQUEST, detail="failed to fetch Report Comparison !")
