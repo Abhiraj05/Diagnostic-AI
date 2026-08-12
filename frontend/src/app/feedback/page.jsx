@@ -39,14 +39,12 @@ export default function FeedbackPage() {
         formData,
       );
 
-      alert(response.data.message);
-
-     
       setFormData({
         user_name: "",
         user_email: "",
         user_feedback: "",
       });
+      alert(response.data.message);
     } catch (error) {
       console.error(error);
       alert("Failed to submit feedback!");
@@ -55,11 +53,9 @@ export default function FeedbackPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 relative overflow-hidden text-white">
-      {/* Decorative Background Glows */}
       <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      {/* Container */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-10">
         <Link
           href="/"
@@ -70,8 +66,6 @@ export default function FeedbackPage() {
           </span>
           Back to Home
         </Link>
-
-        {/* Main Content */}
         <div className="mt-10 grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-400/20 px-5 py-2 text-cyan-400 font-semibold text-sm mb-8">
@@ -89,10 +83,7 @@ export default function FeedbackPage() {
               you. Reach out to our team and we'll get back to you as soon as
               possible.
             </p>
-
-            {/* Contact Details */}
             <div className="mt-12 space-y-7">
-              {/* Email */}
               <div className="flex items-center gap-5">
                 <div className="h-14 w-14 rounded-2xl border border-slate-700 bg-white/5 flex items-center justify-center text-cyan-400 text-2xl">
                   ✉
@@ -105,8 +96,6 @@ export default function FeedbackPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Phone */}
               <div className="flex items-center gap-5">
                 <div className="h-14 w-14 rounded-2xl border border-slate-700 bg-white/5 flex items-center justify-center text-cyan-400 text-2xl">
                   ☎
@@ -117,8 +106,6 @@ export default function FeedbackPage() {
                   <p className="text-xl font-semibold">+91 98765 43210</p>
                 </div>
               </div>
-
-              {/* Location */}
               <div className="flex items-center gap-5">
                 <div className="h-14 w-14 rounded-2xl border border-slate-700 bg-white/5 flex items-center justify-center text-cyan-400 text-2xl">
                   📍
@@ -133,7 +120,6 @@ export default function FeedbackPage() {
           </div>
 
           <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-black tracking-tight">
                 Send <span className="text-cyan-400">Feedback</span>
@@ -143,10 +129,7 @@ export default function FeedbackPage() {
                 We'd love to hear your thoughts and suggestions.
               </p>
             </div>
-
-            {/* Your Existing Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Name
@@ -162,8 +145,6 @@ export default function FeedbackPage() {
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
                 />
               </div>
-
-              {/* Email */}
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Email
@@ -179,8 +160,6 @@ export default function FeedbackPage() {
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
                 />
               </div>
-
-              {/* Feedback */}
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Feedback

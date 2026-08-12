@@ -48,9 +48,16 @@ export default function SignUpPage() {
     }
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/signup",
+        "http://127.0.0.1:8000/auth/signup",
         formData,
       );
+      setFormData({
+        name: "",
+        email: "",
+        gender: "",
+        age: "",
+        password: "",
+      });
       alert(response.data.message);
       return;
     } catch (error) {
@@ -65,12 +72,10 @@ export default function SignUpPage() {
       {loading && <Loader />}
       {!loading && (
         <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative overflow-hidden text-white">
-          {/* Decorative Background Glows */}
           <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
           <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl relative z-10">
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-black tracking-tight">
                 Sign <span className="text-cyan-400">Up</span>
@@ -80,7 +85,6 @@ export default function SignUpPage() {
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
@@ -93,7 +97,7 @@ export default function SignUpPage() {
                   placeholder="John Doe"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition capitalize"
                 />
               </div>
 
@@ -126,8 +130,8 @@ export default function SignUpPage() {
                   <option value="" disabled>
                     Select Gender
                   </option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
                 </select>
               </div>
 
@@ -168,8 +172,6 @@ export default function SignUpPage() {
                 Create Account
               </button>
             </form>
-
-            {/* Footer Link */}
             <p className="text-sm text-center text-slate-400 mt-8">
               Already registered?{" "}
               <button

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import Loader from "@/components/Loader";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import bloodReportImg from "@/assets/bloodtestimg.jpg";
 
 export default function Page() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(null);
 
   const handleNavigate = (route) => {
     setLoading(true);
@@ -18,42 +19,70 @@ export default function Page() {
       router.push(route);
     }, 2000);
   };
+
+  const handleNavigateWithOutputLoader = (route) => {
+    router.push(route);
+  };
+
+  const logOut = () => {
+    localStorage.removeItem("access_token");
+    alert("logged out successfully !");
+    return;
+  };
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("access_token");
+    setToken(storedToken);
+  }, []);
+
   return (
     <>
       {loading && <Loader />}
       {!loading && (
         <div className="min-h-screen flex flex-col bg-slate-950 text-white">
-          {/* HEADER / NAVIGATION BAR */}
           <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur">
             <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6">
-              {/* Logo */}
               <h1 className="text-2xl font-extrabold">
                 <Link href="/">
                   Diagnostic <span className="text-cyan-400">AI</span>
                 </Link>
               </h1>
+              {!token && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNavigate("/signin")}
+                    className="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => handleNavigate("/signup")}
+                    className="text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-4 py-2 rounded-xl transition-colors shadow-lg shadow-cyan-500/10"
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
 
-              {/* Action Buttons: Linked to Authentication Pages */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => handleNavigate("/signin")}
-                  className="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => handleNavigate("/signup")}
-                  className="text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-4 py-2 rounded-xl transition-colors shadow-lg shadow-cyan-500/10"
-                >
-                  Get Started
-                </button>
-              </div>
+              {token && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNavigateWithOutputLoader("/settings")}
+                    className="text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-4 py-2 rounded-xl transition-colors shadow-lg shadow-cyan-500/10"
+                  >
+                    User Profile
+                  </button>
+                  <button
+                    onClick={() => logOut()}
+                    className="text-sm font-semibold text-slate-300 hover:text-white  px-4 py-2 rounded-xl border border-slate-600 transition-colors shadow-lg shadow-slate-500/10"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </header>
-
-          {/* MAIN CONTENT WORKSPACE */}
           <main className="flex-1 min-w-0 overflow-x-hidden">
-            {/* Hero Section */}
             <section className="relative overflow-hidden py-24">
               <div className="absolute inset-0 bg-linear-to-br from-cyan-500/20 via-slate-950 to-blue-600/20"></div>
 
@@ -76,27 +105,31 @@ export default function Page() {
                     and get intelligent medical insights in seconds
                   </p>
 
-                  <div className="mt-10 flex gap-4">
-                    <button
-                      onClick={() => handleNavigate("/pdf-chat")}
-                      className="rounded-xl bg-cyan-500 px-8 py-4 font-semibold hover:bg-cyan-400 grid place-items-center text-slate-900"
-                    >
-                      Upload Report
-                    </button>
+                  {token && (
+                    <div className="mt-10 flex gap-4">
+                      <button
+                        onClick={() =>
+                          handleNavigateWithOutputLoader("/document-chat")
+                        }
+                        className="rounded-xl bg-cyan-500 px-8 py-4 font-semibold hover:bg-cyan-400 grid place-items-center text-slate-900"
+                      >
+                        Upload Report
+                      </button>
 
-                    <button
-                      onClick={() => handleNavigate("/comparison")}
-                      href="/comparison"
-                      className="rounded-xl border border-slate-700 px-8 py-4 hover:bg-slate-900 grid place-items-center"
-                    >
-                      Dashboard
-                    </button>
-                  </div>
+                      <button
+                        onClick={() =>
+                          handleNavigateWithOutputLoader("/comparison")
+                        }
+                        href="/comparison"
+                        className="rounded-xl border border-slate-700 px-8 py-4 hover:bg-slate-900 grid place-items-center"
+                      >
+                        Dashboard
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* AI Summary Progress Bars Widget */}
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-                  {/* <h2 className="text-2xl font-bold">AI Dashboard</h2> */}
                   <div className="rounded-3xl overflow-hidden border border-cyan-500/20 shadow-2xl">
                     <Image
                       src={bloodReportImg}
@@ -108,8 +141,6 @@ export default function Page() {
                 </div>
               </div>
             </section>
-
-            {/* Features Section */}
             <section className="max-w-7xl mx-auto px-6 py-20">
               <h2 className="text-center text-4xl font-bold mb-14">
                 What We Offer
@@ -156,11 +187,8 @@ export default function Page() {
               </div>
             </section>
           </main>
-
-          {/* EXTENDED PROFESSIONAL FOOTER */}
           <footer className="border-t border-slate-900 bg-slate-950 text-slate-400 py-12 mt-auto">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-              {/* Brand Column */}
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-white">
                   Diagnostic <span className="text-cyan-400">AI</span>
@@ -171,7 +199,6 @@ export default function Page() {
                 </p>
               </div>
 
-              {/* Platform Navigation Links */}
               <div>
                 <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
                   Platform
@@ -203,8 +230,6 @@ export default function Page() {
                   </li>
                 </ul>
               </div>
-
-              {/* Contact / Help Desk */}
               <div>
                 <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
                   Support
@@ -229,8 +254,6 @@ export default function Page() {
                 </ul>
               </div>
             </div>
-
-            {/* Bottom Legal bar */}
             <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-slate-900 text-xs text-slate-500 flex flex-col md:flex-row justify-between gap-4">
               <p>&copy; 2026 Diagnostic AI. All rights reserved.</p>
             </div>

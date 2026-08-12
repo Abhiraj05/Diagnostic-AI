@@ -8,7 +8,7 @@ import axios from "axios";
 export default function ForgotPassword() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "",
+    user_email: "",
   });
 
   const handleChange = (e) => {
@@ -18,19 +18,21 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.email) {
+    if (!formData.user_email) {
       alert("please enter your email !");
       return;
     }
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/reset-password",
+        "http://127.0.0.1:8000/auth/reset-password",
         formData,
       );
-      localStorage.setItem("email", formData.email);
+      localStorage.setItem("user_email", formData.user_email);
+      setFormData({
+        user_email: "",
+      });
       alert(response.data.message);
       router.push("/verify-otp");
-      
     } catch (error) {
       console.log(error);
       alert("failed to send reset email !");
@@ -40,6 +42,8 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
         <div className="text-center">
           <h1 className="text-3xl font-black text-white tracking-tight">
@@ -62,8 +66,8 @@ export default function ForgotPassword() {
             <input
               type="email"
               required
-              name="email"
-              value={formData.email}
+              name="user_email"
+              value={formData.user_email}
               onChange={handleChange}
               placeholder="example@gmail.com"
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"

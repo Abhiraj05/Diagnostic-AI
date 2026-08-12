@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import axios from "axios";
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [formData, setFormData] = useState({
-    password: "",
+    user_password: "",
   });
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,7 +20,7 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.password) {
+    if (!formData.user_password) {
       alert("please enter your new password !");
       return;
     }
@@ -30,25 +30,29 @@ export default function ResetPassword() {
       return;
     }
 
-    if (formData.password.length < 8) {
+    if (formData.user_password.length < 8) {
       alert("password length should be minimum 8 characters !");
       return;
     }
 
-    if (formData.password && confirmPassword) {
+    if (formData.user_password != confirmPassword) {
       alert("password doesn't match !");
       return;
     }
     try {
-      const email = localStorage.getItem("email");
+      const email = localStorage.getItem("user_email");
       const response = await axios.post(
-        "http://127.0.0.1:8000/update-password",
+        "http://127.0.0.1:8000/auth/update-password",
         {
-          email: email,
-          password: formData.password,
+          user_email: email,
+          user_password: formData.user_password,
         },
       );
-      localStorage.removeItem("email");
+      localStorage.removeItem("user_email");
+      setFormData({
+        user_password: "",
+      });
+      confirmPassword("");
       alert(response.data.message);
       router.push("/password-reset-success");
       return;
@@ -60,6 +64,8 @@ export default function ResetPassword() {
   };
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
         <div className="text-center">
           <h1 className="text-3xl font-black text-white tracking-tight">
@@ -81,8 +87,8 @@ export default function ResetPassword() {
             <input
               type={showPassword ? "text" : "password"}
               required
-              name="password"
-              value={formData.password}
+              name="user_password"
+              value={formData.user_password}
               onChange={handleChange}
               placeholder="Enter new password"
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"

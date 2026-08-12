@@ -1,15 +1,19 @@
 "use client";
 import Sidebar from "@/components/Sidebar";
-import { useState } from "react";
+import Loader from "@/components/Loader";
+
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function Page() {
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "johndoe@gmail.com",
-    gender: "Male",
-    age: "42",
+    name: "",
+    email: "",
+    gender: "",
+    age: "",
   });
+  const [loading, setLoading] = useState(true);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -26,9 +30,14 @@ export default function Page() {
     }
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/update-profile",
+      const response = await axios.put(
+        "http://127.0.0.1:8000/auth/update-profile",
         formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
       );
       alert(response.data.message);
       return;
@@ -38,16 +47,43 @@ export default function Page() {
       return;
     }
   };
+
+  const getUserData = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:8000/auth/get-profile",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
+      );
+
+      setFormData(response.data.user_profile_data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getUserData();
+  }, []);
+
+  setTimeout(() => {
+    setLoading(false);
+  }, 2000);
+
+  if (loading) {
+    return <Loader />;
+  }
   return (
     <div className="min-h-screen flex bg-slate-950 text-white">
       <Sidebar />
       <main className="flex-1 lg:ml-72 flex flex-col min-h-screen">
-        {/* Core Content Container */}
         <div className="max-w-5xl mx-auto w-full p-8 space-y-10 flex-1 mt-7">
           <span className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300 mb-7">
             Patient Details
           </span>
-          {/* 1. Profile Settings Card */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
             <form onSubmit={handleSubmit}>
               <div className="border-b border-slate-800/60 p-8">
