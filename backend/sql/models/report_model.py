@@ -10,7 +10,8 @@ class ReportDetails(Base):
     id = Column(Integer, primary_key=True, index=True)
     file_id = Column(
         Integer,
-        ForeignKey("uploaded_files.id"),
+        ForeignKey("uploaded_files.id",
+                   ondelete="CASCADE"),
         nullable=False,
         unique=True
     )

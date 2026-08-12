@@ -1,21 +1,18 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough, RunnableParallel
-from langchain_core.output_parsers import StrOutputParser
 from rag.schemas.chatbot_schema import ChatResponse
 from rag.schemas.report_output_schema import ReportValuesResponse
 from rag.schemas.summary_output_schema import SummaryOutput
 from rag.vector.vector_store import create_or_get_vector_db
 
-model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview",temperature=0)
 structured_model1 = model.with_structured_output(ReportValuesResponse)
 structured_model2 = model.with_structured_output(SummaryOutput)
 structured_model3 = model.with_structured_output(ChatResponse)
 
 # extracts the report values from the document
 def extract_report_values(report_text):
-    parser = StrOutputParser()
-
     prompt = PromptTemplate(
         template="""
     You are a medical report information extraction assistant.
@@ -23,7 +20,7 @@ def extract_report_values(report_text):
     Extract the laboratory values from the given medical report text.
 
     Report Text:
-    {report_text}
+    {report_data}
 
     Extract the following parameters:
     - Hemoglobin
@@ -51,9 +48,9 @@ def extract_report_values(report_text):
     - Do not provide explanations.
     - Do not summarize the report.
     """,
-        input_variables=["report_text"]
+        input_variables=["report_data"]
     )
-    final_chain = prompt | structured_model1 | parser
+    final_chain = prompt | structured_model1
     response = final_chain.invoke({"report_data": report_text})
 
     if not response:
@@ -64,8 +61,6 @@ def extract_report_values(report_text):
 
 # generates summary based on report values
 def generate_summary(report_dict):
-    parser = StrOutputParser()
-
     prompt = PromptTemplate(
         template="""
     You are an experienced medical report analysis assistant.
@@ -121,18 +116,21 @@ def generate_summary(report_dict):
     - Do not prescribe medications.
     - If all values are normal, clearly mention that the report is generally healthy and provide preventive health advice.
     - If a value is missing or null, state that it was not available for analysis.
-
-    Respond using Markdown with clear headings and bullet points.
+    
+    Return the summary as plain text:
+    - Do not use Markdown.
+    - Do not use #, *, -, or other Markdown formatting.
+    - Use simple headings and sentences.
     """,
         input_variables=["report_data"],
     )
-    final_chain = prompt | structured_model2 | parser
+    final_chain = prompt | structured_model2 
     response = final_chain.invoke({"report_data": report_dict})
 
     if not response:
         return None
     else:
-        return response
+        return response.summary
 
 
 # joints the documents text to form context
@@ -142,9 +140,8 @@ def join_text(retrieved_docs):
 
 
 # answers the user query based on context
-def answer_user_query(user_id, file_id, user_message, chat_history):
+async def answer_user_query(user_id, file_id, user_message, chat_history):
     vector_db = create_or_get_vector_db()
-    parser = StrOutputParser()
     retriever = vector_db.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 5},
@@ -181,20 +178,25 @@ def answer_user_query(user_id, file_id, user_message, chat_history):
     - If the required information is not present in the context, reply:
     "I don't know based on the provided medical report."
 
-    Answer in a clear, patient-friendly manner using headings and bullet points where appropriate.
+    Answer in a clear, patient-friendly manner.
+    
+    Return the summary as plain text:
+    - Do not use Markdown.
+    - Do not use #, *, -, or other Markdown formatting.
+    - Use simple headings and sentences.
     """,
         input_variables=["context", "question", "chat_history"],
     )
 
     parallel_chain = RunnableParallel({
-        "context": retriever | RunnableLambda(join_text),
+        "context":  RunnableLambda(lambda x: x["question"])| retriever | RunnableLambda(join_text),
         "question": RunnablePassthrough(),
         "chat_history": RunnableLambda(lambda x: x["chat_history"])
     })
 
-    final_chain = parallel_chain | prompt | structured_model3 | parser
+    final_chain = parallel_chain | prompt | structured_model3 
 
-    response = final_chain.invoke({
+    response = await final_chain.ainvoke({
         "question": user_message,
         "chat_history": chat_history
     })
@@ -202,12 +204,11 @@ def answer_user_query(user_id, file_id, user_message, chat_history):
     if not response:
         return None
     else:
-        return response
+        return response.ai
 
 
 # generates summary based on comparison of two report values
 def generate_comparison_summary(old_report_data, recent_report_data):
-    parser = StrOutputParser()
     prompt = PromptTemplate(
         template="""
     You are an experienced medical report analysis assistant specializing in comparing laboratory reports over time.
@@ -322,12 +323,15 @@ def generate_comparison_summary(old_report_data, recent_report_data):
     - If the recent report is generally healthy, mention that the patient is maintaining good health and provide preventive advice.
     - Avoid alarming language; explain findings in a balanced manner.
 
-    Respond using Markdown with clear headings, bullet points, and comparison tables.
+    Return the summary as plain text:
+    - Do not use Markdown.
+    - Do not use #, *, -, or other Markdown formatting.
+    - Use simple headings and sentences.
     """,
         input_variables=["old_report_data", "recent_report_data"],
     )
 
-    final_chain = prompt | structured_model2 | parser
+    final_chain = prompt | structured_model2 
     response = final_chain.invoke({
         "old_report_data": old_report_data,
         "recent_report_data": recent_report_data})
@@ -335,4 +339,4 @@ def generate_comparison_summary(old_report_data, recent_report_data):
     if not response:
         return None
     else:
-        return response
+        return response.summary

@@ -2,5 +2,5 @@ from pydantic import BaseModel, Field
 
 # set new password schema
 class SetNewPasswordSchema(BaseModel):
-    email: str = Field(description="user email")
-    password: str = Field(description="user new password")
+    user_email: str = Field(description="user email")
+    user_password: str = Field(description="user new password")

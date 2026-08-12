@@ -1,15 +1,15 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, WebSocket, WebSocketDisconnect, status, BackgroundTasks
+import asyncio
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, delete
 from middleware.cors import middleware
 from schemas.user_schema import UserSchema
-from schemas.mail_schema import MailSchema
+from schemas.user_login_schema import UserLoginSchema
+from schemas.reset_mail_schema import ResetMailSchema
 from schemas.feedback_schema import FeedbackSchema
 from schemas.verify_otp import VerifyOtpSchema
 from schemas.set_new_password import SetNewPasswordSchema
 from schemas.report_schema import ReportDetailsSchema
-from schemas.file_schema import UploadedFileSchema
-from schemas.chats_schema import ChatsSchema
 from sql.models.user_model import User
 from sql.models.file_model import UploadedFile
 from sql.models.report_model import ReportDetails
@@ -22,27 +22,52 @@ from rag.extractor.extract_document_text import extract_document_text
 from rag.extractor.extract_image_text import extract_image_text
 from rag.chunks.generate_chunks import create_chunks
 from rag.vector.vector_store import create_or_get_vector_db
-from rag.chat.chatbot import extract_report_values, generate_summary, answer_user_query, generate_comparison_summary
+from rag.chat.chatbot import extract_report_values, generate_summary, answer_user_query, generate_comparison_summary, join_text
 from cache.redis_client import redis_connection
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from services.email_service import send_mail
+from services.email_service import create_mail, email_worker
 from services.otp_generation import generate_otp, otp_key
 from cache.redis_client import redis_connection
 from datetime import date
 from pathlib import Path
+from contextlib import asynccontextmanager
+
+
+# manages the application startup & shutdown lifecycle
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker_task = asyncio.create_task(email_worker())
+    yield
+    worker_task.cancel()
+
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await redis.aclose()
+
 
 # app initialise
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
+
 
 # redis client connection
 redis = redis_connection()
 
+
 # middleware
 middleware(app)
 
+
+# file path
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
 # checks whether new or older user & then register's user
 @app.post("/auth/signup")
-async def create_user(user: UserSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
+async def create_user(user: UserSchema, db: AsyncSession = Depends(create_db_connection)):
     user_name = user.name
     user_email = user.email
     user_gender = user.gender
@@ -50,9 +75,8 @@ async def create_user(user: UserSchema, background_tasks: BackgroundTasks, db: A
     user_password = user.password
 
     try:
-        user_query = (select(User).where(User.email == user_email))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.email == user_email))
+        is_old_user = user_query.mappings().first()
 
         if is_old_user is None:
             new_user = User(name=user_name, email=user_email, gender=user_gender, age=user_age,
@@ -74,10 +98,10 @@ async def create_user(user: UserSchema, background_tasks: BackgroundTasks, db: A
             Thank you for choosing us.
 
             Best regards,
+            
             Tech Team
             """
-            background_tasks.add_task(
-                send_mail, email_sub, user_email, email_body)
+            await create_mail(email_sub, user_email, email_body)
 
             return {"message": "registered successfully !"}
 
@@ -89,23 +113,24 @@ async def create_user(user: UserSchema, background_tasks: BackgroundTasks, db: A
             status_code=status.HTTP_400_BAD_REQUEST, detail="registration failed !")
 
 
-# checks credentials & login's user
+# checks credentials & login's the user
 @app.post("/auth/signin")
-async def login(user: UserSchema, db: AsyncSession = Depends(create_db_connection)):
+async def login(user: UserLoginSchema, db: AsyncSession = Depends(create_db_connection)):
     user_email = user.email
     user_password = user.password
 
     try:
-        user_query = (select(User).where(User.email == user_email))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.email == user_email))
+        is_old_user = user_query.mappings().first()
+        old_user_data = is_old_user["User"]
 
-        if is_old_user is None or not verify_password(user_password, is_old_user.password):
+        if is_old_user is None or not verify_password(user_password, old_user_data.password):
             return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials !")
 
         else:
-            token = create_token({"sub": is_old_user.email})
-            return {"message": "login successfully !", "access_token": token}
+            user_name = old_user_data.name
+            token = create_token({"sub": old_user_data.email})
+            return {"message": "login successfully !", "access_token": token, "user_name": user_name}
 
     except:
         raise HTTPException(
@@ -118,9 +143,8 @@ async def delete_profile(current_user=Depends(get_current_user), db: AsyncSessio
     user_id = current_user.id
 
     try:
-        user_query = (select(User).where(User.id == user_id))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.id == user_id))
+        is_old_user = user_query.mappings().first()
 
         if is_old_user is None:
             raise HTTPException(
@@ -138,41 +162,49 @@ async def delete_profile(current_user=Depends(get_current_user), db: AsyncSessio
 @app.put("/auth/update-profile")
 async def update_profile(user: UserSchema, current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
+    user_name = user.name
+    user_email = user.email
+    user_gender = user.gender
+    user_age = user.age
 
     try:
-        user_query = (select(User).where(User.id == user_id))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.id == user_id))
+        is_old_user = user_query.mappings().first()
+
         if is_old_user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
         else:
-            is_old_user.name = user.name
-            is_old_user.email = user.email
+            old_user_data = is_old_user["User"]
+            old_user_data.name = user_name
+            old_user_data.email = user_email
+            old_user_data.gender = user_gender
+            old_user_data.age = user_age
+
             await db.commit()
-            await db.refresh(is_old_user)
+            await db.refresh(old_user_data)
             return {"message": "profile updated successfully !"}
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to updated profile !")
 
 
-# sends reset password mail
+# sends reset password mail to user
 @app.post("/auth/reset-password")
-async def reset_password(email: MailSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
-    recipient_email = email.recipient_email
+async def reset_password(email: ResetMailSchema, db: AsyncSession = Depends(create_db_connection)):
+    user_email = email.user_email
 
     try:
-        user_query = (select(User).where(User.email == recipient_email))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.email == user_email))
+        is_old_user = user_query.mappings().first()
+
         if is_old_user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
         else:
-            otp = str(generate_otp())
+            otp = generate_otp()
             redis = redis_connection()
-            redis.set(otp_key(recipient_email), otp, ex=60)
+            await redis.set(otp_key(user_email), otp, ex=60)
             email_sub = "Reset Your Password"
             email_body = f"""
             Hello,
@@ -189,8 +221,8 @@ async def reset_password(email: MailSchema, background_tasks: BackgroundTasks, d
             Thank you,
             Tech Team
             """
-            background_tasks.add_task(
-                send_mail, email_sub, recipient_email, email_body)
+
+            await create_mail(email_sub, user_email, email_body)
 
             return {"message": "reset password mail sent successfully !"}
 
@@ -199,21 +231,22 @@ async def reset_password(email: MailSchema, background_tasks: BackgroundTasks, d
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to sent reset email !")
 
 
-# verify otp
+# verify otp entered by user
 @app.post("/auth/verify-otp")
 async def verify_otp(data: VerifyOtpSchema):
-    user_email = data.email
+    user_email = data.user_email
     user_entered_otp = data.otp
 
     try:
         redis = redis_connection()
-        is_otp = int(redis.get(otp_key(user_email)))
+        is_otp = int(await redis.get(otp_key(user_email)))
+
         if not is_otp:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="otp not found !")
 
         elif user_entered_otp == is_otp:
-            redis.delete(otp_key(user_email))
+            await redis.delete(otp_key(user_email))
 
         return {"message": "otp verified successfully !"}
     except:
@@ -221,16 +254,16 @@ async def verify_otp(data: VerifyOtpSchema):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to verify otp !")
 
 
-# update password
+# update password of the user
 @app.post("/auth/update-password")
-async def update_password(data: SetNewPasswordSchema, background_tasks: BackgroundTasks, db: AsyncSession = Depends(create_db_connection)):
-    user_email = data.email
-    user_new_password = data.password
+async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends(create_db_connection)):
+    user_email = data.user_email
+    user_new_password = data.user_password
 
     try:
-        user_query = (select(User).where(User.email == user_email))
-        old_user_data = await db.execute(user_query)
-        is_old_user = old_user_data.first()
+        user_query = await db.execute(select(User).where(User.email == user_email))
+        is_old_user = user_query.scalars().first()
+
         if is_old_user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
@@ -238,6 +271,8 @@ async def update_password(data: SetNewPasswordSchema, background_tasks: Backgrou
             is_old_user.password = hash_password(user_new_password)
             await db.commit()
             await db.refresh(is_old_user)
+
+            user_email = is_old_user.email
             email_sub = "Password Reset Successful"
             email_body = f"""
             Hello,
@@ -249,11 +284,11 @@ async def update_password(data: SetNewPasswordSchema, background_tasks: Backgrou
             If you did not make this change, please contact our support team immediately to secure your account.
 
             Thank you,
+            
             Tech Team
             """
 
-            background_tasks.add_task(
-                send_mail, email_sub, user_email, email_body)
+            await create_mail(email_sub, user_email, email_body)
 
             return {"message": "password updated successfully !"}
 
@@ -262,31 +297,51 @@ async def update_password(data: SetNewPasswordSchema, background_tasks: Backgrou
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to update password !")
 
 
-# sends feedback mail
+# gets user profile data
+@app.get("/auth/get-profile")
+async def update_password(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
+    user_id = current_user.id
+
+    try:
+        user_query = await db.execute(select(User.name, User.email, User.gender, User.age).where(User.id == user_id))
+        is_old_user = user_query.mappings().first()
+
+        if is_old_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
+        else:
+            return {"message": "profile data fetched successfully !", "user_profile_data": is_old_user}
+
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetch profile data !")
+
+
+# sends feedback mail to tech team
 @app.post("/public/feedback")
-async def send_feedback(feedback: FeedbackSchema, background_tasks: BackgroundTasks):
-    user_name = feedback.name
-    user_email = feedback.email
-    user_feedback = feedback.feedback
+async def send_feedback(feedback: FeedbackSchema):
+    user_name = feedback.user_name
+    user_email = feedback.user_email
+    user_feedback = feedback.user_feedback
 
     try:
         email_sub = "Feedback for Your Website"
         email_body = f"""
-            Hello Tech Team,
+        Hello Tech Team,
 
-            I would like to share the following feedback regarding your website.
+        I would like to share the following feedback regarding your website.
 
-            Name: {user_email}
-            Feedback:
-            {user_feedback}
+        Name: {user_email}
+        Feedback:
+        {user_feedback}
 
-            Thank you for taking the time to review my feedback. I appreciate your efforts to improve the website.
+        Thank you for taking the time to review my feedback. I appreciate your efforts to improve the website.
 
-            Best regards,
-            {user_name}
-            """
+        Best regards,
+        {user_name}
+        """
 
-        background_tasks.add_task(send_mail, email_sub, user_email, email_body)
+        await create_mail(email_sub, user_email, email_body)
 
         return {"message": "feedback sent successfully !"}
 
@@ -300,7 +355,7 @@ async def send_feedback(feedback: FeedbackSchema, background_tasks: BackgroundTa
 async def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
     file_name = file.filename
-    file_path = f"upload/{file_name}"
+    file_path = f"{UPLOAD_DIR}/{file_name}"
     file_extension = Path(file_name).suffix
 
     try:
@@ -308,12 +363,11 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="file not found !")
 
-        doc_query = (select(UploadedFile).where(UploadedFile.user_id == user_id,
-                                                UploadedFile.file_name == file_name))
-        doc_data = await db.execute(doc_query)
-        is_old_doc = doc_data.first()
+        doc_query = await db.execute(select(UploadedFile).where(UploadedFile.user_id == user_id,
+                                                                UploadedFile.file_name == file_name))
+        is_old_doc = doc_query.mappings().first()
 
-        if is_old_doc is not None:
+        if is_old_doc is None:
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
 
@@ -325,81 +379,95 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
         else:
             return {"message": "embeddings already exist !"}
 
-        if file_extension == "pdf":
-            report_text = extract_document_text(file_name)
+        if file_extension == ".pdf":
+            report_text = extract_document_text(file_path)
         elif file_extension == "jpg" or "png":
             report_text = extract_image_text(file_path)
 
         response = extract_report_values(report_text)
+
         if response is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to extract report values !")
 
-        new_report = ReportDetails(hemoglobin=response.hemoglobin,
-                                   wbc_count=response.wbc_count,
-                                   platelet_count=response.platelet_count,
-                                   blood_sugar=response.blood_sugar,
-                                   hba1c=response.hba1c,
-                                   total_cholesterol=response.total_cholesterol,
-                                   hdl_cholesterol=response.hdl_cholesterol,
-                                   ldl_cholesterol=response.ldl_cholesterol,
-                                   triglycerides=response.triglycerides,
-                                   creatinine=response.creatinine,
-                                   egfr=response.egfr,
-                                   ast_sgot=response.ast_sgot,
-                                   alt_sgpt=response.alt_sgpt,
-                                   tsh=response.tsh,
-                                   vitamin_d=response.vitamin_d)
+        new_report = ReportDetailsSchema(hemoglobin=response.hemoglobin,
+                                         wbc_count=response.wbc_count,
+                                         platelet_count=response.platelet_count,
+                                         blood_sugar=response.blood_sugar,
+                                         hba1c=response.hba1c,
+                                         total_cholesterol=response.total_cholesterol,
+                                         hdl_cholesterol=response.hdl_cholesterol,
+                                         ldl_cholesterol=response.ldl_cholesterol,
+                                         triglycerides=response.triglycerides,
+                                         creatinine=response.creatinine,
+                                         egfr=response.egfr,
+                                         ast_sgot=response.ast_sgot,
+                                         alt_sgpt=response.alt_sgpt,
+                                         tsh=response.tsh,
+                                         vitamin_d=response.vitamin_d)
 
+        report_json = new_report.model_dump_json()
         report_dict = new_report.model_dump()
-        summary = generate_summary(report_dict)
+        summary = generate_summary(report_json)
+
         if summary is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to generate summary !")
 
-        new_report.extracted_text = report_text
-        new_report.summary_text = summary
+        new_doc_id = new_doc.id
+        jointed_extracted_text = join_text(report_text)
+        current_report = ReportDetails(**report_dict)
+        current_report.file_id = new_doc_id
+        current_report.extracted_text = jointed_extracted_text
+        current_report.summary_text = summary
 
-        db.add(new_report)
+        db.add(current_report)
         await db.commit()
-        await db.refresh(new_report)
+        await db.refresh(current_report)
 
-        documents = create_chunks(report_text)
+        documents = create_chunks(jointed_extracted_text)
         chunks_ids = []
 
         for i, doc in enumerate(documents):
-            doc.meta["source"] = file_name
-            doc.meta["user_id"] = user_id
-            doc.meta["file_id"] = new_doc.id
+            doc.metadata["source"] = file_name
+            doc.metadata["user_id"] = user_id
+            doc.metadata["file_id"] = new_doc_id
             chunks_ids.append(f"{file_name}_{i}")
 
         vector_db = create_or_get_vector_db()
         vector_db.add_documents(documents, ids=chunks_ids)
 
         return {"message": "summary & embeddings generated successfully !",
-                "file_id": new_doc.id, "summary": summary}
+                "file_id": new_doc_id, "summary": summary}
 
     except:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="failed to upload report file !")
 
 
-# processes user query & gives answer
+# processes user query & gives answer based on query
 @app.websocket("/chats/document-chat")
-async def chat(websocket: WebSocket, current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
-    user_id = current_user.id
+async def chat(websocket: WebSocket, db: AsyncSession = Depends(create_db_connection)):
+    token = websocket.query_params.get("token")
 
+    if not token:
+        websocket.close(code=1008)
+
+    current_user = await get_current_user(token, db)
+    user_id = current_user.id
+    file_id = None
     chat_history = [SystemMessage(content="You are a helpful assistant.")]
     await websocket.accept()
+
     try:
         while True:
-            user_data = await websocket.receive_text()
-            if not file_id:
+            user_data = await websocket.receive_json()
+            if file_id is None:
                 file_id = user_data["file_id"]
 
             user_message = user_data["message"]
             chat_history.append(HumanMessage(content=user_message))
-            ai_response = answer_user_query(
+            ai_response = await answer_user_query(
                 user_id, file_id, user_message, chat_history)
 
             if ai_response is None:
@@ -407,9 +475,12 @@ async def chat(websocket: WebSocket, current_user=Depends(get_current_user), db:
 
             else:
                 chat_history.append(AIMessage(content=ai_response))
-                await websocket.send_text(ai_response)
-
-                new_message = Chats(user_id=user_id,
+                await websocket.send_json({
+                    "type": "message",
+                    "ai_msg": ai_response
+                })
+                print("response sended")
+                new_message = Chats(user_id=user_id, file_id=file_id,
                                     user_msg=user_message, ai_msg=ai_response)
                 db.add(new_message)
                 await db.commit()
@@ -419,22 +490,21 @@ async def chat(websocket: WebSocket, current_user=Depends(get_current_user), db:
         print(f"user disconnected. close code: {e.code}. ")
 
 
-# gets chats files history
+# gets chats files history of all files
 @app.get("/chats/get-chats-files")
 async def get_chats(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        files_query = (select(UploadedFile).where(UploadedFile.user_id == user_id)
-                       .order_by(desc(UploadedFile.upload_date)))
-        files_data = await db.execute(files_query)
-        is_files = files_data.all()
+        files_query = await db.execute(select(UploadedFile.id, UploadedFile.file_name, UploadedFile.upload_date).join(Chats, Chats.file_id == UploadedFile.id).where(UploadedFile.user_id == user_id).distinct()
+                                       .order_by(desc(UploadedFile.upload_date)))
+        is_files = files_query.mappings().all()
+
         if is_files is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="chats files history not found !")
         else:
-            chats_files = [UploadedFileSchema(file) for file in is_files]
-            return {"message": "chats files history fetched successfully !", "chats_files": chats_files}
+            return {"message": "chats files history fetched successfully !", "chats_files": is_files}
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetched chats files history !")
@@ -446,16 +516,15 @@ async def get_chats(id: int, current_user=Depends(get_current_user), db: AsyncSe
     user_id = current_user.id
 
     try:
-        chats_query = (select(Chats).where(
+        chats_query = await db.execute(select(Chats.user_msg, Chats.ai_msg).where(
             Chats.user_id == user_id, Chats.file_id == id))
-        chats_data = await db.execute(chats_query)
-        is_chats = chats_data.first()
+        is_chats = chats_query.mappings().all()
+
         if is_chats is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="chats history not found !")
         else:
-            chats_history = ChatsSchema(is_chats)
-            return {"message": "chats history fetched successfully !", "chats_history": chats_history}
+            return {"message": "chats history fetched successfully !", "chats_history": is_chats}
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetched chats history !")
@@ -467,104 +536,109 @@ async def delete_chat(id: int, current_user=Depends(get_current_user), db: Async
     user_id = current_user.id
 
     try:
-        file_query = (select(UploadedFile).where(
-            UploadedFile.id == id, UploadedFile.user_id == user_id))
-        file_data = await db.execute(file_query)
-        is_file = file_data.first()
-        if is_file is None:
+        file_query = await db.execute(delete(UploadedFile).where(
+                    UploadedFile.id == id, UploadedFile.user_id == user_id))
+            
+        if file_query is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="chats history not found !")
-        else:
-            await db.delete(is_file)
-            await db.commit()
-            return {"message": "chats history deleted successfully !"}
-    except:
+                status_code=status.HTTP_404_NOT_FOUND, detail="file not found !")
+
+        await db.commit()
+        return {"message": "chats history deleted successfully !"}
+
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to delete chat history !")
 
 
-# gets latests report
+# gets latests report of user
 @app.get("/analysis/get-report")
 async def get_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        reports_query = (select(UploadedFile, ReportDetails)
-                         .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
-                         .where(UploadedFile.user_id == user_id)
-                         .order_by(desc(UploadedFile.upload_date))
-                         .limit(1))
-        reports_data = await db.execute(reports_query)
-        is_reports = reports_data.all()
+        reports_query = await db.execute(select(UploadedFile, ReportDetails)
+                                         .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
+                                         .where(UploadedFile.user_id == user_id)
+                                         .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
+                                         .limit(1))
+        is_reports = reports_query.mappings().all()
 
         if not is_reports:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="report not found !")
         else:
-            latest_report = ReportDetailsSchema(is_reports)
-            return {"message": "latest report fetched successfully !", "latest_report": latest_report}
+            file_data = is_reports[0]["UploadedFile"]
+            reports_data = is_reports[0]["ReportDetails"]
+            return {"message": "latest report fetched successfully !", "file_data": file_data, "latest_report": reports_data}
 
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetch latest reports !")
 
 
-# gets latests reports
+# gets latests reports of user
 @app.get("/comparison/get-reports")
 async def get_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        reports_query = (select(ReportDetails)
-                         .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
-                         .where(UploadedFile.user_id == user_id)
-                         .order_by(desc(UploadedFile.upload_date))
-                         .limit(2))
-        reports_data = await db.execute(reports_query)
-        is_reports = reports_data.all()
+        reports_query = await db.execute(select(UploadedFile.file_name, UploadedFile.upload_date, ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count, ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol, ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides, ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d)
+                                         .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
+                                         .where(UploadedFile.user_id == user_id)
+                                         .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
+                                         .limit(2))
+        is_reports = reports_query.mappings().all()
 
-        if not is_reports:
+        if is_reports is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="reports not found !")
         else:
-            latest_reports = [ReportDetailsSchema(
-                report) for report in is_reports]
-            return {"message": "latest reports fetched successfully !", "latest_reports": latest_reports}
+            recent_report_data = is_reports[0]
+            old_report_data = is_reports[1]
+            comparison_query = await db.execute(select(ReportComparison).where(ReportComparison.user_id == user_id,
+                                                                               ReportComparison.previous_report_id == old_report_data.id, ReportComparison.new_report_id == recent_report_data.id))
+            is_old_comparison = comparison_query.mappings().first()
+
+            if is_old_comparison is None:
+                return {"message": "latest reports fetched successfully !", "latest_reports": is_reports}
+            else:
+                old_comparison_data = is_old_comparison["ReportComparison"]
+                return {"message": "latest reports and  comparison summary fetched successfully !", "latest_reports": is_reports, "comparison_summary": old_comparison_data.summary}
 
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetch latest reports !")
 
 
-# compare reports and generate summary
+# compares the reports and generate summary based on the values present in report
 @app.post("/comparison/compare-reports")
 async def compare_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        reports_query = (select(ReportDetails)
-                         .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
-                         .where(UploadedFile.user_id == user_id)
-                         .order_by(desc(UploadedFile.upload_date))
-                         .limit(2))
-        reports_data = await db.execute(reports_query)
-        is_reports = reports_data.all()
+        reports_query = await db.execute(select(ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count, ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol, ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides, ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d)
+                                         .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
+                                         .where(UploadedFile.user_id == user_id)
+                                         .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
+                                         .limit(2))
+        is_reports = reports_query.mappings().all()
 
-        if not is_reports:
+        if is_reports is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="reports not found !")
         elif len(is_reports) == 1:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="cannot generate a reports comparison summary !")
         else:
-            recent_report_data = ReportDetailsSchema(is_reports[0])
-            old_report_data = ReportDetailsSchema(is_reports[1])
-            comparison_query = (select(ReportComparison).where(ReportComparison.user_id == user_id,
-                                                               ReportComparison.previous_report_id == old_report_data.id, ReportComparison.new_report_id == recent_report_data.id))
-            comparison_data = await db.execute(comparison_query)
-            is_old_comparison = comparison_data.first()
+            recent_report_data = is_reports[0]
+            old_report_data = is_reports[1]
+            comparison_query = await db.execute(select(ReportComparison).where(ReportComparison.user_id == user_id,
+                                                                               ReportComparison.previous_report_id == old_report_data.id, ReportComparison.new_report_id == recent_report_data.id))
+            is_old_comparison = comparison_query.mappings().first()
 
-            if is_old_comparison is not None:
+            if is_old_comparison is None:
                 summary = generate_comparison_summary(
                     old_report_data, recent_report_data)
 
@@ -573,14 +647,14 @@ async def compare_reports(current_user=Depends(get_current_user), db: AsyncSessi
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to generate summary !")
                 else:
                     new_comparison = ReportComparison(user_id=user_id,
-                                                      previous_report_id=old_report_data, new_report_id=recent_report_data, summary=summary)
+                                                      previous_report_id=old_report_data.id, new_report_id=recent_report_data.id, summary=summary)
                     db.add(new_comparison)
                     await db.commit()
                     await db.refresh(new_comparison)
 
                     return {"message": "reports comparison summary generated successfully !", "comparison_summary": summary}
             else:
-                return {"message": "comparison summary already exist !", "comparison_summary": is_old_comparison.summary}
+                return {"message": "comparison summary already exist !"}
 
     except:
         raise HTTPException(
