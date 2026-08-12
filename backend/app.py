@@ -479,7 +479,7 @@ async def chat(websocket: WebSocket, db: AsyncSession = Depends(create_db_connec
                     "type": "message",
                     "ai_msg": ai_response
                 })
-                print("response sended")
+
                 new_message = Chats(user_id=user_id, file_id=file_id,
                                     user_msg=user_message, ai_msg=ai_response)
                 db.add(new_message)
@@ -496,7 +496,7 @@ async def get_chats(current_user=Depends(get_current_user), db: AsyncSession = D
     user_id = current_user.id
 
     try:
-        files_query = await db.execute(select(UploadedFile.id, UploadedFile.file_name, UploadedFile.upload_date).join(Chats, Chats.file_id == UploadedFile.id).where(UploadedFile.user_id == user_id).distinct()
+        files_query = await db.execute(select(UploadedFile.id, UploadedFile.file_name, UploadedFile.upload_date).where(UploadedFile.user_id == user_id)
                                        .order_by(desc(UploadedFile.upload_date)))
         is_files = files_query.mappings().all()
 
@@ -546,8 +546,7 @@ async def delete_chat(id: int, current_user=Depends(get_current_user), db: Async
         await db.commit()
         return {"message": "chats history deleted successfully !"}
 
-    except Exception as e:
-        print(e)
+    except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to delete chat history !")
 
