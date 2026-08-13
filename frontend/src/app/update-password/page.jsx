@@ -53,7 +53,7 @@ export default function ResetPassword() {
       setFormData({
         user_password: "",
       });
-      confirmPassword("");
+      setConfirmPassword("");
       alert(response.data.message);
       router.push("/password-reset-success");
       return;
