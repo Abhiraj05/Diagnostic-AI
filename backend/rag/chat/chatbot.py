@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough, RunnableParallel
@@ -6,6 +8,10 @@ from rag.schemas.report_output_schema import ReportValuesResponse
 from rag.schemas.summary_output_schema import ReportSummaryOutput
 from rag.schemas.comparison_summary_output_schema import ReportComparisonOutput
 from rag.vector.vector_store import create_or_get_vector_db
+
+load_dotenv()
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
 
 model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview",temperature=0)
 structured_model1 = model.with_structured_output(ReportValuesResponse)
