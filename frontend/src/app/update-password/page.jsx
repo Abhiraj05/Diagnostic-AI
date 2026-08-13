@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import axios from "axios";
 
 export default function ResetPassword() {
@@ -66,7 +67,13 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
+
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8"
+      >
         <div className="text-center">
           <h1 className="text-3xl font-black text-white tracking-tight">
             Reset
@@ -133,7 +140,7 @@ export default function ResetPassword() {
             ← Back to Sign In
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

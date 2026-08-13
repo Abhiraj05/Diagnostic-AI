@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import axios from "axios";
 
 const getStatus = (value, min, max) => {
@@ -88,7 +89,25 @@ export default function ReportComparisonPage() {
         },
       );
 
-      setReports(response.data.latest_reports);
+      setReports(response.data.latest_reports || []);
+      setSummary(response.data.comparison_summary || "Not Available");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const CreateComparisonSummary = async () => {
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/comparison/compare-reports",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
+      );
+
       setSummary(response.data.comparison_summary);
     } catch (error) {
       console.log(error);
@@ -113,8 +132,17 @@ export default function ReportComparisonPage() {
   };
 
   useEffect(() => {
-    getUserData();
-    getReportsData();
+    const loadData = async () => {
+      try {
+        await getUserData();
+        await getReportsData();
+        await CreateComparisonSummary();
+      } catch (error) {
+        console.error("Failed to load comparison data:", error);
+      }
+    };
+
+    loadData();
   }, []);
 
   setTimeout(() => {
@@ -127,9 +155,29 @@ export default function ReportComparisonPage() {
 
   if (reports.length < 2) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center shadow-xl">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+          className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center shadow-xl"
+        >
+          <motion.div
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.25,
+              type: "spring",
+              stiffness: 200,
+            }}
+            className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800"
+          >
             <svg
               className="h-7 w-7 text-cyan-400"
               fill="none"
@@ -143,16 +191,32 @@ export default function ReportComparisonPage() {
                 d="M9 17.25v1.007a2.25 2.25 0 0 0 2.25 2.25h1.5A2.25 2.25 0 0 0 15 18.257V17.25m-6-8.25h6m-6 3h6m-7.5 6.75h9A2.25 2.25 0 0 0 18.75 16.5V6.75A2.25 2.25 0 0 0 16.5 4.5h-9a2.25 2.25 0 0 0-2.25 2.25v9.75a2.25 2.25 0 0 0 2.25 2.25Z"
               />
             </svg>
-          </div>
+          </motion.div>
 
-          <h2 className="text-xl font-semibold text-white">
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            className="text-xl font-semibold text-white"
+          >
             Not Enough Reports
-          </h2>
+          </motion.h2>
 
-          <p className="mt-3 text-sm leading-6 text-slate-400">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.45 }}
+            className="mt-3 text-sm leading-6 text-slate-400"
+          >
             At least two medical reports are required to compare your results.
-          </p>
-          <button
+          </motion.p>
+
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.55 }}
+            whileHover={{ scale: 1.03, x: -2 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/document-chat")}
             className="mt-6 inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-cyan-500/50 hover:bg-slate-700 hover:text-cyan-400"
           >
@@ -170,9 +234,9 @@ export default function ReportComparisonPage() {
               />
             </svg>
             Go Back
-          </button>
-        </div>
-      </div>
+          </motion.button>
+        </motion.div>
+      </motion.div>
     );
   }
   const latestReport = reports[0];
@@ -324,26 +388,38 @@ export default function ReportComparisonPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-950 text-white">
+      <motion.div
+        className="min-h-screen bg-slate-950 text-white"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <Sidebar />
 
         <main className="flex-1 lg:ml-72 flex flex-col">
           <div className="max-w-6xl mx-auto w-full p-8 mt-6">
-            {/* HEADER */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300 mb-3">
+                Report Comparison
+              </span>
 
-            <span className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300 mb-3">
-              Report Comparison
-            </span>
+              <h1 className="text-4xl font-bold">Report Comparison</h1>
 
-            <h1 className="text-4xl font-bold">Report Comparison</h1>
+              <p className="text-slate-400 mt-2 text-lg">
+                Compare the patient's latest report with the previous report.
+              </p>
+            </motion.div>
 
-            <p className="text-slate-400 mt-2">
-              Compare the patient's latest report with the previous report.
-            </p>
-
-            {/* PATIENT */}
-
-            <div className="mt-8 rounded-2xl border border-slate-700 bg-slate-900 p-6">
+            <motion.div
+              className="mt-8 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-lg"
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
               <h2 className="text-lg font-semibold mb-4 text-cyan-400">
                 Patient
               </h2>
@@ -375,13 +451,21 @@ export default function ReportComparisonPage() {
                   <p className="mt-1 font-medium">{patient.email}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* REPORT CARDS */}
-
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              <div className="rounded-2xl border border-cyan-500/30 bg-slate-900 p-6">
+            <motion.div
+              className="grid md:grid-cols-2 gap-6 mt-6 text-lg"
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <motion.div
+                className="rounded-2xl border border-cyan-500/30 bg-slate-900 p-6"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.2 }}
+              >
                 <span className="text-lg text-cyan-400">Latest Report</span>
+
                 <p className="text-slate-400 mt-2">
                   File Name :{" "}
                   <span className="text-slate-100">
@@ -395,10 +479,15 @@ export default function ReportComparisonPage() {
                     {latestReport.upload_date}
                   </span>
                 </p>
-              </div>
+              </motion.div>
 
-              <div className="rounded-2xl border border-cyan-500/30 bg-slate-900 p-6">
+              <motion.div
+                className="rounded-2xl border border-cyan-500/30 bg-slate-900 p-6"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.2 }}
+              >
                 <span className="text-lg text-cyan-400">Previous Report</span>
+
                 <p className="text-slate-400 mt-2">
                   File Name :{" "}
                   <span className="text-slate-100">
@@ -412,12 +501,15 @@ export default function ReportComparisonPage() {
                     {previousReport.upload_date}
                   </span>
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
-            {/* LEGEND */}
-
-            <div className="mt-8 flex flex-wrap gap-6 text-sm">
+            <motion.div
+              className="mt-8 flex flex-wrap gap-6 text-lg"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               <span className="text-green-400">● Improved / Normal</span>
 
               <span className="text-yellow-400">● Attention</span>
@@ -425,11 +517,14 @@ export default function ReportComparisonPage() {
               <span className="text-red-400">● Worsened / Abnormal</span>
 
               <span className="text-slate-400">● No status change</span>
-            </div>
+            </motion.div>
 
-            {/* COMPARISON */}
-
-            <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900 overflow-hidden">
+            <motion.div
+              className="mt-4 rounded-2xl border border-slate-700 bg-slate-900 overflow-hidden"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
               <div className="border-b border-slate-700 px-6 py-4">
                 <h2 className="text-lg font-semibold">Report Comparison</h2>
 
@@ -439,7 +534,7 @@ export default function ReportComparisonPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-lg">
                   <thead className="bg-slate-800 text-slate-400">
                     <tr>
                       <th className="px-6 py-4 text-left">Test</th>
@@ -453,7 +548,7 @@ export default function ReportComparisonPage() {
                   </thead>
 
                   <tbody>
-                    {labResults.map((lab) => {
+                    {labResults.map((lab, index) => {
                       const latestStatus = getStatus(
                         lab.latest,
                         lab.min,
@@ -479,17 +574,19 @@ export default function ReportComparisonPage() {
                       );
 
                       return (
-                        <tr
+                        <motion.tr
                           key={lab.name}
                           className="border-t border-slate-700"
+                          initial={{ opacity: 0, x: -15 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{
+                            duration: 0.35,
+                            delay: 0.45 + index * 0.06,
+                          }}
                         >
-                          {/* TEST */}
-
                           <td className="px-6 py-4 font-medium text-slate-300">
                             {lab.name}
                           </td>
-
-                          {/* LATEST */}
 
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
@@ -515,8 +612,6 @@ export default function ReportComparisonPage() {
                             </div>
                           </td>
 
-                          {/* PREVIOUS */}
-
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span
@@ -541,33 +636,47 @@ export default function ReportComparisonPage() {
                             </div>
                           </td>
 
-                          {/* CHANGE */}
-
                           <td className="px-6 py-4">
                             <span className={`font-semibold ${changeColor}`}>
                               {changeText}
                             </span>
                           </td>
-                        </tr>
+                        </motion.tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </motion.div>
 
-            {/* AI SUMMARY */}
-
-            <div className="mt-8 rounded-2xl border border-slate-700 bg-slate-900 p-6">
+            <motion.div
+              className="mt-8 rounded-2xl border border-slate-700 bg-slate-900 p-6"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.6,
+              }}
+            >
               <h2 className="text-lg font-semibold text-cyan-400">
                 AI Generated Comparison Summary
               </h2>
 
-              <p className="mt-3 text-slate-400 leading-7">{summary}</p>
-            </div>
+              <motion.p
+                className="mt-3 text-slate-400 leading-7 text-lg text-justify"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{
+                  duration: 0.7,
+                  delay: 0.8,
+                }}
+              >
+                {summary}
+              </motion.p>
+            </motion.div>
           </div>
         </main>
-      </div>
+      </motion.div>
     </>
   );
 }

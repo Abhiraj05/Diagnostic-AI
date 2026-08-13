@@ -3,6 +3,7 @@
 import Loader from "@/components/Loader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import axios from "axios";
 
 export default function SignUpPage() {
@@ -59,7 +60,7 @@ export default function SignUpPage() {
         password: "",
       });
       alert(response.data.message);
-      router.push("/registration-success")
+      router.push("/registration-success");
       return;
     } catch (error) {
       console.log(error);
@@ -71,26 +72,55 @@ export default function SignUpPage() {
   return (
     <>
       {loading && <Loader />}
-      {!loading && (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative overflow-hidden text-white">
-          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl relative z-10">
-            <div className="text-center mb-8">
+      {!loading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-12 relative overflow-hidden text-white"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"
+          ></motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+            className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"
+          ></motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl relative z-10"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-center mb-8"
+            >
               <h1 className="text-3xl font-black tracking-tight">
                 Sign <span className="text-cyan-400">Up</span>
               </h1>
+
               <p className="text-sm text-slate-400 mt-2">
                 Request platform access to analyze clinical data.
               </p>
-            </div>
+            </motion.div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Full Name
                 </label>
+
                 <input
                   type="text"
                   required
@@ -106,6 +136,7 @@ export default function SignUpPage() {
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Email
                 </label>
+
                 <input
                   type="email"
                   required
@@ -121,6 +152,7 @@ export default function SignUpPage() {
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Gender
                 </label>
+
                 <select
                   required
                   name="gender"
@@ -131,6 +163,7 @@ export default function SignUpPage() {
                   <option value="" disabled>
                     Select Gender
                   </option>
+
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                 </select>
@@ -140,6 +173,7 @@ export default function SignUpPage() {
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Age
                 </label>
+
                 <input
                   type="number"
                   required
@@ -155,6 +189,7 @@ export default function SignUpPage() {
                 <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Password
                 </label>
+
                 <input
                   type="password"
                   required
@@ -166,14 +201,23 @@ export default function SignUpPage() {
                 />
               </div>
 
-              <button
+              <motion.button
                 type="submit"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.15 }}
                 className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-xl font-bold transition duration-200 shadow-lg shadow-cyan-500/10 mt-4"
               >
                 Create Account
-              </button>
+              </motion.button>
             </form>
-            <p className="text-sm text-center text-slate-400 mt-8">
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="text-sm text-center text-slate-400 mt-8"
+            >
               Already registered?{" "}
               <button
                 onClick={() => handleNavigate("/signin")}
@@ -181,9 +225,9 @@ export default function SignUpPage() {
               >
                 Sign In instead
               </button>
-            </p>
-          </div>
-        </div>
+            </motion.p>
+          </motion.div>
+        </motion.div>
       )}
     </>
   );

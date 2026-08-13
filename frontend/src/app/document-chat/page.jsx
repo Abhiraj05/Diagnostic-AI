@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Loader from "@/components/Loader";
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
 export default function Page() {
@@ -652,9 +653,18 @@ export default function Page() {
   if (!token) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-        <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/70 p-10 text-center shadow-xl">
-          {/* Icon */}
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+        <motion.div
+          initial={{ opacity: 0, y: 25, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/70 p-10 text-center shadow-xl"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: "backOut" }}
+            className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800"
+          >
             <svg
               className="h-8 w-8 text-cyan-400"
               fill="none"
@@ -676,44 +686,71 @@ export default function Page() {
                 d="M12 14.5v2"
               />
             </svg>
-          </div>
+          </motion.div>
 
-          <h1 className="text-2xl font-semibold text-white">
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="text-2xl font-semibold text-white"
+          >
             Authentication Required
-          </h1>
+          </motion.h1>
 
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400"
+          >
             Your session has expired or you are not authenticated. Please log in
             again to continue using your account.
-          </p>
+          </motion.p>
 
-          <Link
-            href="/signin"
-            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.45 }}
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+            <Link
+              href="/signin"
+              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Go to Login
-          </Link>
-        </div>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Go to Login
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex overflow-hidden">
-      <aside
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen bg-slate-950 text-white flex overflow-hidden"
+    >
+      <motion.aside
+        initial={{ width: 0, opacity: 0 }}
+        animate={{
+          width: sidebarOpen ? 288 : 0,
+          opacity: sidebarOpen ? 1 : 0,
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
         className={`transition-all duration-300 border-r border-slate-700 bg-slate-900 ${
           sidebarOpen ? "w-72" : "w-0"
         } overflow-hidden flex flex-col`}
@@ -721,114 +758,152 @@ export default function Page() {
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-700">
           <h2 className="font-semibold text-lg">Chats History</h2>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setSidebarOpen(false)}
             className="rounded-lg p-2 hover:bg-slate-800"
           >
             ✕
-          </button>
+          </motion.button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {pdfChats.length === 0 && (
-            <div className="text-center text-slate-400 mt-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-slate-400 mt-10"
+            >
               No PDFs uploaded
-            </div>
+            </motion.div>
           )}
 
-          {Array.isArray(pdfChats) &&
-            pdfChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => selectChat(chat.file_id || chat.id)}
-                className={`cursor-pointer rounded-xl border p-3 transition ${
-                  currentChat?.id === chat.id
-                    ? "border-cyan-400 bg-slate-800"
-                    : "border-slate-700 bg-slate-900 hover:bg-slate-800"
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3 min-w-0">
-                    <span className="material-symbols-outlined text-cyan-400">
-                      description
-                    </span>
+          <AnimatePresence>
+            {Array.isArray(pdfChats) &&
+              pdfChats.map((chat) => (
+                <motion.div
+                  key={chat.id}
+                  layout
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  whileHover={{ x: 3 }}
+                  onClick={() => selectChat(chat.file_id || chat.id)}
+                  className={`cursor-pointer rounded-xl border p-3 transition ${
+                    currentChat?.id === chat.id
+                      ? "border-cyan-400 bg-slate-800"
+                      : "border-slate-700 bg-slate-900 hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3 min-w-0">
+                      <span className="material-symbols-outlined text-cyan-400">
+                        description
+                      </span>
 
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate w-40">
-                        {chat.name}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate w-40">
+                          {chat.name}
+                        </p>
 
-                      <p className="text-xs text-slate-400">
-                        {chat.upload_date}
-                      </p>
+                        <p className="text-xs text-slate-400">
+                          {chat.upload_date}
+                        </p>
+                      </div>
                     </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        deleteChat(chat.id);
+                      }}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        delete
+                      </span>
+                    </motion.button>
                   </div>
 
-                  {/* Delete */}
+                  <div className="mt-3 h-2 rounded-full bg-slate-700">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${chat.progress}%` }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="h-2 rounded-full bg-cyan-400 transition-all"
+                    />
+                  </div>
 
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-
-                      deleteChat(chat.id);
-                    }}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      delete
-                    </span>
-                  </button>
-                </div>
-
-                <div className="mt-3 h-2 rounded-full bg-slate-700">
-                  <div
-                    className="h-2 rounded-full bg-cyan-400 transition-all"
-                    style={{
-                      width: `${chat.progress}%`,
-                    }}
-                  />
-                </div>
-
-                {chat.processing && (
-                  <p className="mt-2 text-xs text-cyan-400">
-                    {chat.progress < 95
-                      ? `Uploading ${chat.progress}%`
-                      : "Processing document & generating embeddings..."}
-                  </p>
-                )}
-              </div>
-            ))}
+                  {chat.processing && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-2 text-xs text-cyan-400"
+                    >
+                      {chat.progress < 95
+                        ? `Uploading ${chat.progress}%`
+                        : "Processing document..."}
+                    </motion.p>
+                  )}
+                </motion.div>
+              ))}
+          </AnimatePresence>
         </div>
-      </aside>
+      </motion.aside>
 
       <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-950">
+        <motion.header
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="h-16 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-950"
+        >
           <div className="flex items-center gap-3">
             {!sidebarOpen && (
-              <button
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setSidebarOpen(true)}
                 className="rounded-lg p-2 hover:bg-slate-800"
               >
                 <span className="material-symbols-outlined">menu</span>
-              </button>
+              </motion.button>
             )}
 
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2 text-sm font-medium text-cyan-400 backdrop-blur-md transition-all duration-300 hover:border-cyan-400 hover:bg-slate-800 hover:text-cyan-300"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                arrow_back
-              </span>
-              Back to Home
-            </Link>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2 text-sm font-medium text-cyan-400 backdrop-blur-md transition-all duration-300 hover:border-cyan-400 hover:bg-slate-800 hover:text-cyan-300"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  arrow_back
+                </span>
+                Back to Home
+              </Link>
+            </motion.div>
           </div>
-        </header>
+        </motion.header>
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {!currentChat ? (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex items-center justify-center p-8"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 25, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                whileHover={{ scale: 1.01 }}
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -854,36 +929,69 @@ export default function Page() {
                   }
                 />
 
-                <span className="material-symbols-outlined text-7xl text-cyan-400">
+                <motion.span
+                  animate={{
+                    y: [0, -8, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="material-symbols-outlined text-7xl text-cyan-400"
+                >
                   cloud_upload
-                </span>
+                </motion.span>
 
-                <h2 className="mt-6 text-3xl font-bold">Upload Document</h2>
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="mt-6 text-3xl font-bold"
+                >
+                  Upload Document
+                </motion.h2>
 
-                <p className="mt-3 text-slate-400">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="mt-3 text-slate-400"
+                >
                   Drag & Drop your Document here (PDF, JPG, PNG)
-                </p>
+                </motion.p>
 
-                <button className="mt-8 rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 hover:bg-cyan-400">
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="mt-8 rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 hover:bg-cyan-400"
+                >
                   Select Document
-                </button>
-              </div>
-            </div>
+                </motion.button>
+              </motion.div>
+            </motion.div>
           ) : (
             <>
-              <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-                <div className="flex items-center gap-3 text-sm text-slate-400">
-                  <span>{currentChat.name}</span>
-
-                  {currentChat.processing && (
-                    <span className="text-cyan-400">
-                      Processing document...
-                    </span>
-                  )}
-                </div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 overflow-y-auto px-8 py-8 space-y-6"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-3 text-sm text-slate-400"
+                >
+                </motion.div>
 
                 {currentChat.messages?.length === 0 && (
-                  <div className="text-center text-slate-500 py-20">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="text-center text-slate-500 py-20"
+                  >
                     <span className="material-symbols-outlined text-5xl">
                       chat
                     </span>
@@ -893,67 +1001,103 @@ export default function Page() {
                     <p className="text-sm mt-1">
                       Ask a question about this document.
                     </p>
-                  </div>
+                  </motion.div>
                 )}
 
-                {Array.isArray(currentChat.messages) &&
-                  currentChat.messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${
-                        msg.sender === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      {msg.sender === "user" && (
-                        <div className="max-w-3xl rounded-2xl px-5 py-4 bg-cyan-500 text-slate-950">
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
-                        </div>
-                      )}
-
-                      {msg.sender === "assistant" && (
-                        <div className="max-w-3xl rounded-2xl px-5 py-4 bg-slate-900 border border-slate-700">
-                          {msg.isTyping ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-slate-400">
-                                Thinking
-                              </span>
-
-                              <div className="flex gap-1">
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.3s]" />
-
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.15s]" />
-
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" />
-                              </div>
-                            </div>
-                          ) : (
+                <AnimatePresence initial={false}>
+                  {Array.isArray(currentChat.messages) &&
+                    currentChat.messages.map((msg, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{
+                          opacity: 0,
+                          y: 15,
+                          scale: 0.98,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          scale: 1,
+                        }}
+                        transition={{
+                          duration: 0.3,
+                          ease: "easeOut",
+                        }}
+                        className={`flex ${
+                          msg.sender === "user"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        {msg.sender === "user" && (
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            className="max-w-3xl rounded-2xl px-5 py-4 bg-cyan-500 text-slate-950"
+                          >
                             <p className="whitespace-pre-wrap">{msg.text}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+                          </motion.div>
+                        )}
 
-              <div className="border-t border-slate-700 bg-slate-950 p-5">
+                        {msg.sender === "assistant" && (
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            className="max-w-3xl rounded-2xl px-5 py-4 bg-slate-900 border border-slate-700"
+                          >
+                            {msg.isTyping ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-400">
+                                  Thinking
+                                </span>
+
+                                <div className="flex gap-1">
+                                  <motion.span
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      delay: 0,
+                                    }}
+                                    className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.3s]"
+                                  />
+
+                                  <motion.span
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      delay: 0.15,
+                                    }}
+                                    className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.15s]"
+                                  />
+
+                                  <motion.span
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.6,
+                                      repeat: Infinity,
+                                      delay: 0.3,
+                                    }}
+                                    className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap">{msg.text}</p>
+                            )}
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </AnimatePresence>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="border-t border-slate-700 bg-slate-950 p-5"
+              >
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-xl border border-slate-700 bg-slate-900 p-3 hover:bg-slate-800"
-                  >
-                    <span className="material-symbols-outlined">upload</span>
-                  </button>
-
-                  <input
-                    ref={fileInputRef}
-                    hidden
-                    type="file"
-                    multiple
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(event) =>
-                      addFiles(Array.from(event.target.files || []))
-                    }
-                  />
                   <input
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
@@ -973,7 +1117,9 @@ export default function Page() {
                     className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 outline-none focus:border-cyan-400 disabled:opacity-50"
                   />
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
                     disabled={
                       !currentChat?.uploaded ||
                       currentChat?.processing ||
@@ -985,13 +1131,13 @@ export default function Page() {
                     className="rounded-xl bg-cyan-500 px-6 py-4 font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-40"
                   >
                     Send
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             </>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
