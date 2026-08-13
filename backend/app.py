@@ -100,7 +100,7 @@ async def create_user(user: UserSchema, db: AsyncSession = Depends(create_db_con
 
             Best regards,
             
-            Tech Team
+            Diagnostic AI Tech Team
             """
             await create_mail(email_sub, user_email, email_body)
 
@@ -197,7 +197,7 @@ async def reset_password(email: ResetMailSchema, db: AsyncSession = Depends(crea
 
     try:
         user_query = await db.execute(select(User).where(User.email == user_email))
-        is_old_user = user_query.mappings().first()
+        is_old_user = user_query.scalars().first()
 
         if is_old_user is None:
             raise HTTPException(
@@ -206,9 +206,10 @@ async def reset_password(email: ResetMailSchema, db: AsyncSession = Depends(crea
             otp = generate_otp()
             redis = redis_connection()
             await redis.set(otp_key(user_email), otp, ex=60)
+            user_name = is_old_user.name
             email_sub = "Reset Your Password"
             email_body = f"""
-            Hello,
+            Hello {user_name},
 
             We received a request to reset your password.
 
@@ -220,7 +221,8 @@ async def reset_password(email: ResetMailSchema, db: AsyncSession = Depends(crea
             Your account will remain secure.
 
             Thank you,
-            Tech Team
+            
+            Diagnostic AI Tech Team
             """
 
             await create_mail(email_sub, user_email, email_body)
@@ -275,9 +277,10 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
             await db.refresh(is_old_user)
 
             user_email = is_old_user.email
+            user_name = is_old_user.name
             email_sub = "Password Reset Successful"
             email_body = f"""
-            Hello,
+            Hello {user_name},
 
             Your password has been reset successfully for the account associated with email address {user_email}.
 
@@ -287,7 +290,7 @@ async def update_password(data: SetNewPasswordSchema, db: AsyncSession = Depends
 
             Thank you,
             
-            Tech Team
+            Diagnostic AI Tech Team
             """
 
             await create_mail(email_sub, user_email, email_body)
@@ -334,6 +337,7 @@ async def send_feedback(feedback: FeedbackSchema):
         I would like to share the following feedback regarding your website.
 
         Name: {user_email}
+        
         Feedback:
         {user_feedback}
 

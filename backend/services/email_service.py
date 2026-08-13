@@ -1,7 +1,7 @@
 import json
 import asyncio
 from fastapi_mail import ConnectionConfig, FastMail
-from fastapi_mail import MessageSchema
+from fastapi_mail import MessageSchema, MessageType
 from core.email_config import settings
 from cache.redis_client import redis_connection
 
@@ -49,19 +49,16 @@ async def send_mail():
         message = MessageSchema(
             subject=data["email_sub"],
             recipients=[data["recipient_email"]],
-            body=data["email_body"]
+            body=data["email_body"],
+            subtype=MessageType.plain
         )
         await fm.send_message(message)
-
+        
         return {"message": "mailed send successfully !"}
 
 
 # email worker continuously check redis email queue and send email if found
 async def email_worker():
     while True:
-        result = await send_mail()
-
-        # if result:
-        #     print(result)
-
+        await send_mail()
         await asyncio.sleep(1)
