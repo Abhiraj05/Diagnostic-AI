@@ -3,11 +3,14 @@
 import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
+
 export default function ReportAnalysisPage() {
   const [profile, setProfile] = useState({});
   const [report, setReport] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const getUserData = async () => {
     try {
@@ -59,6 +62,65 @@ export default function ReportAnalysisPage() {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
         <p className="text-red-400">Failed to load report.</p>
+      </div>
+    );
+  }
+
+  if (report.length == 0) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+        <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/70 p-10 text-center shadow-xl">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+            <svg
+              className="h-8 w-8 text-cyan-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.7}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h6m-6 4h4m-7 4h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"
+              />
+            </svg>
+          </div>
+
+          <h1 className="text-2xl font-semibold text-white">Upload a Report</h1>
+
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">
+            At least one medical report is required to generate your report
+            analysis.
+          </p>
+
+          <div className="mx-auto mt-7 max-w-sm rounded-xl border border-slate-800 bg-slate-950 px-5 py-4">
+            <p className="text-sm text-slate-500">Analysis requires</p>
+
+            <p className="mt-1 text-sm font-medium text-cyan-400">
+              At least 1 report
+            </p>
+          </div>
+
+          <button
+            onClick={() => router.push("/document-chat")}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-6 py-3 text-sm font-medium text-slate-300 transition hover:border-cyan-500/50 hover:bg-slate-700 hover:text-cyan-400"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }

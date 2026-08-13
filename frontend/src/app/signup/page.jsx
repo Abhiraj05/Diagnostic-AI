@@ -59,6 +59,7 @@ export default function SignUpPage() {
         password: "",
       });
       alert(response.data.message);
+      router.push("/registration-success")
       return;
     } catch (error) {
       console.log(error);

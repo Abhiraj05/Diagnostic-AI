@@ -381,7 +381,7 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
 
         if file_extension == ".pdf":
             report_text = extract_document_text(file_path)
-        elif file_extension == "jpg" or "png":
+        elif file_extension == ".jpg" or ".png":
             report_text = extract_image_text(file_path)
 
         response = extract_report_values(report_text)

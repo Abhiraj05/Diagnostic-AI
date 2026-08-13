@@ -35,7 +35,7 @@ export default function FeedbackPage() {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/feedback",
+        "http://127.0.0.1:8000/public/feedback",
         formData,
       );
 

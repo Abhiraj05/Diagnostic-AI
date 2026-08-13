@@ -27,6 +27,7 @@ export default function Page() {
   const logOut = () => {
     localStorage.removeItem("access_token");
     alert("logged out successfully !");
+    window.location.reload();
     return;
   };
 
@@ -199,37 +200,45 @@ export default function Page() {
                 </p>
               </div>
 
-              <div>
-                <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-                  Platform
-                </h4>
-                <ul className="space-y-2.5 text-sm">
-                  <li>
-                    <button
-                      onClick={() => handleNavigate("/comparison")}
-                      className="hover:text-cyan-400 transition-colors"
-                    >
-                      Dashboard
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => handleNavigate("/pdf-chat")}
-                      className="hover:text-cyan-400 transition-colors"
-                    >
-                      Upload Document
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => handleNavigate("/report-analysis")}
-                      className="hover:text-cyan-400 transition-colors"
-                    >
-                      Report Analysis
-                    </button>
-                  </li>
-                </ul>
-              </div>
+              {token && (
+                <div>
+                  <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+                    Platform
+                  </h4>
+                  <ul className="space-y-2.5 text-sm">
+                    <li>
+                      <button
+                        onClick={() =>
+                          handleNavigateWithOutputLoader("/comparison")
+                        }
+                        className="hover:text-cyan-400 transition-colors"
+                      >
+                        Dashboard
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() =>
+                          handleNavigateWithOutputLoader("/document-chat")
+                        }
+                        className="hover:text-cyan-400 transition-colors"
+                      >
+                        Upload Document
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() =>
+                          handleNavigateWithOutputLoader("/report-analysis")
+                        }
+                        className="hover:text-cyan-400 transition-colors"
+                      >
+                        Report Analysis
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
               <div>
                 <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
                   Support

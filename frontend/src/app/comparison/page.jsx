@@ -3,6 +3,7 @@
 import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 const getStatus = (value, min, max) => {
@@ -74,6 +75,7 @@ export default function ReportComparisonPage() {
   const [reports, setReports] = useState([]);
   const [summary, setSummary] = useState("Not Available");
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const getReportsData = async () => {
     try {
@@ -120,17 +122,56 @@ export default function ReportComparisonPage() {
   }, 2000);
 
   if (loading) {
-    return (
-      <Loader/>
-    );
+    return <Loader />;
   }
 
   if (reports.length < 2) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <p className="text-red-400">
-          At least two reports are required for comparison.
-        </p>
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center shadow-xl">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800">
+            <svg
+              className="h-7 w-7 text-cyan-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 17.25v1.007a2.25 2.25 0 0 0 2.25 2.25h1.5A2.25 2.25 0 0 0 15 18.257V17.25m-6-8.25h6m-6 3h6m-7.5 6.75h9A2.25 2.25 0 0 0 18.75 16.5V6.75A2.25 2.25 0 0 0 16.5 4.5h-9a2.25 2.25 0 0 0-2.25 2.25v9.75a2.25 2.25 0 0 0 2.25 2.25Z"
+              />
+            </svg>
+          </div>
+
+          <h2 className="text-xl font-semibold text-white">
+            Not Enough Reports
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            At least two medical reports are required to compare your results.
+          </p>
+          <button
+            onClick={() => router.push("/document-chat")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-cyan-500/50 hover:bg-slate-700 hover:text-cyan-400"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
