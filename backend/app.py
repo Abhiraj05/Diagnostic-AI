@@ -4,11 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, delete
 from middleware.cors import middleware
 from schemas.user_schema import UserSchema
+from schemas.user_profile_schema import UserProfileSchema
 from schemas.user_login_schema import UserLoginSchema
 from schemas.reset_mail_schema import ResetMailSchema
 from schemas.feedback_schema import FeedbackSchema
-from schemas.verify_otp import VerifyOtpSchema
-from schemas.set_new_password import SetNewPasswordSchema
+from schemas.verify_otp_schema import VerifyOtpSchema
+from schemas.set_new_password_schema import SetNewPasswordSchema
 from schemas.report_schema import ReportDetailsSchema
 from sql.models.user_model import User
 from sql.models.file_model import UploadedFile
@@ -150,7 +151,7 @@ async def delete_profile(current_user=Depends(get_current_user), db: AsyncSessio
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="profile not found !")
         else:
-            await db.delete(is_old_user)
+            await db.execute(delete(User).where(User.id == user_id))
             await db.commit()
             return {"message": "profile deleted successfully !"}
     except:
@@ -160,7 +161,7 @@ async def delete_profile(current_user=Depends(get_current_user), db: AsyncSessio
 
 # updates user account details
 @app.put("/auth/update-profile")
-async def update_profile(user: UserSchema, current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
+async def update_profile(user: UserProfileSchema, current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
     user_name = user.name
     user_email = user.email
@@ -249,6 +250,7 @@ async def verify_otp(data: VerifyOtpSchema):
             await redis.delete(otp_key(user_email))
 
         return {"message": "otp verified successfully !"}
+
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to verify otp !")
@@ -379,12 +381,18 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
         else:
             return {"message": "embeddings already exist !"}
 
-        if file_extension == ".pdf":
-            report_text = extract_document_text(file_path)
-        elif file_extension == ".jpg" or ".png":
-            report_text = extract_image_text(file_path)
+        if file_extension.lower() == ".pdf":
+            document_report_text = extract_document_text(file_path)
+            extracted_text = join_text(document_report_text)
 
-        response = extract_report_values(report_text)
+        elif file_extension.lower() in [".jpg", ".png"]:
+            extracted_text = extract_image_text(file_path)
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type")
+
+        response = await extract_report_values(extracted_text)
 
         if response is None:
             raise HTTPException(
@@ -408,24 +416,26 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
 
         report_json = new_report.model_dump_json()
         report_dict = new_report.model_dump()
-        summary = generate_summary(report_json)
+        summary_response = await generate_summary(report_json)
 
-        if summary is None:
+        if summary_response is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to generate summary !")
 
         new_doc_id = new_doc.id
-        jointed_extracted_text = join_text(report_text)
         current_report = ReportDetails(**report_dict)
         current_report.file_id = new_doc_id
-        current_report.extracted_text = jointed_extracted_text
-        current_report.summary_text = summary
+        current_report.extracted_text = extracted_text
+        current_report.summary = summary_response.summary
+        current_report.key_findings = summary_response.key_findings
+        current_report.recommendations = summary_response.recommendations
+        current_report.follow_up = summary_response.follow_up
 
         db.add(current_report)
         await db.commit()
         await db.refresh(current_report)
 
-        documents = create_chunks(jointed_extracted_text)
+        documents = create_chunks(extracted_text)
         chunks_ids = []
 
         for i, doc in enumerate(documents):
@@ -438,7 +448,7 @@ async def upload_file(file: UploadFile = File(...), current_user=Depends(get_cur
         vector_db.add_documents(documents, ids=chunks_ids)
 
         return {"message": "summary & embeddings generated successfully !",
-                "file_id": new_doc_id, "summary": summary}
+                "file_id": new_doc_id}
 
     except:
         raise HTTPException(
@@ -497,7 +507,7 @@ async def get_chats(current_user=Depends(get_current_user), db: AsyncSession = D
 
     try:
         files_query = await db.execute(select(UploadedFile.id, UploadedFile.file_name, UploadedFile.upload_date).where(UploadedFile.user_id == user_id)
-                                       .order_by(desc(UploadedFile.upload_date)))
+                                       .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id)))
         is_files = files_query.mappings().all()
 
         if is_files is None:
@@ -530,60 +540,70 @@ async def get_chats(id: int, current_user=Depends(get_current_user), db: AsyncSe
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetched chats history !")
 
 
-# deletes specific chat history
+# deletes specific chat history & file
 @app.delete("/chats/delete-chat/{id}")
 async def delete_chat(id: int, current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        file_query = await db.execute(delete(UploadedFile).where(
-                    UploadedFile.id == id, UploadedFile.user_id == user_id))
-            
-        if file_query is None:
+        file_query = await db.execute(select(UploadedFile).where(
+            UploadedFile.id == id, UploadedFile.user_id == user_id))
+
+        is_file = file_query.mappings().first()
+
+        if is_file is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="file not found !")
-
-        await db.commit()
-        return {"message": "chats history deleted successfully !"}
+        else:
+            await db.execute(delete(UploadedFile).where(
+                UploadedFile.id == id, UploadedFile.user_id == user_id))
+            await db.commit()
+            return {"message": "chats history deleted successfully !"}
 
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to delete chat history !")
 
 
-# gets latests report of user
+# gets all reports of user
 @app.get("/analysis/get-report")
 async def get_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        reports_query = await db.execute(select(UploadedFile, ReportDetails)
+        reports_query = await db.execute(select(UploadedFile.file_name, UploadedFile.upload_date, ReportDetails.id, ReportDetails.hemoglobin,
+                                                ReportDetails.wbc_count, ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c,
+                                                ReportDetails.total_cholesterol, ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol,
+                                                ReportDetails.triglycerides, ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot,
+                                                ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d,
+                                                ReportDetails.summary, ReportDetails.key_findings, ReportDetails.recommendations,
+                                                ReportDetails.follow_up)
                                          .join(ReportDetails, UploadedFile.id == ReportDetails.file_id)
                                          .where(UploadedFile.user_id == user_id)
                                          .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
-                                         .limit(1))
+                                         )
         is_reports = reports_query.mappings().all()
 
-        if not is_reports:
+        if is_reports is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="report not found !")
         else:
-            file_data = is_reports[0]["UploadedFile"]
-            reports_data = is_reports[0]["ReportDetails"]
-            return {"message": "latest report fetched successfully !", "file_data": file_data, "latest_report": reports_data}
-
+            return {"message": "latest report fetched successfully !", "latest_report": is_reports}
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to fetch latest reports !")
 
 
-# gets latests reports of user
+# gets latests two reports of user
 @app.get("/comparison/get-reports")
 async def get_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
     try:
-        reports_query = await db.execute(select(UploadedFile.file_name, UploadedFile.upload_date, ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count, ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol, ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides, ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d)
+        reports_query = await db.execute(select(UploadedFile.file_name, UploadedFile.upload_date, ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count,
+                                                ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol,
+                                                ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides, ReportDetails.creatinine,
+                                                ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d)
                                          .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
                                          .where(UploadedFile.user_id == user_id)
                                          .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
@@ -597,14 +617,20 @@ async def get_reports(current_user=Depends(get_current_user), db: AsyncSession =
             recent_report_data = is_reports[0]
             old_report_data = is_reports[1]
             comparison_query = await db.execute(select(ReportComparison).where(ReportComparison.user_id == user_id,
-                                                                               ReportComparison.previous_report_id == old_report_data.id, ReportComparison.new_report_id == recent_report_data.id))
+                                                                               ReportComparison.previous_report_id == old_report_data.id,
+                                                                               ReportComparison.new_report_id == recent_report_data.id))
             is_old_comparison = comparison_query.mappings().first()
 
             if is_old_comparison is None:
                 return {"message": "latest reports fetched successfully !", "latest_reports": is_reports}
             else:
                 old_comparison_data = is_old_comparison["ReportComparison"]
-                return {"message": "latest reports and  comparison summary fetched successfully !", "latest_reports": is_reports, "comparison_summary": old_comparison_data.summary}
+                return {"message": "latest reports and  comparison summary fetched successfully !",
+                        "latest_reports": is_reports,
+                        "comparison_summary": old_comparison_data.summary,
+                        "key_changes": is_old_comparison.key_changes,
+                        "recommendations": is_old_comparison.recommendations,
+                        "follow_up": is_old_comparison.follow_up}
 
     except:
         raise HTTPException(
@@ -617,7 +643,11 @@ async def compare_reports(current_user=Depends(get_current_user), db: AsyncSessi
     user_id = current_user.id
 
     try:
-        reports_query = await db.execute(select(ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count, ReportDetails.platelet_count, ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol, ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides, ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt, ReportDetails.tsh, ReportDetails.vitamin_d)
+        reports_query = await db.execute(select(ReportDetails.id, ReportDetails.hemoglobin, ReportDetails.wbc_count, ReportDetails.platelet_count,
+                                                ReportDetails.blood_sugar, ReportDetails.hba1c, ReportDetails.total_cholesterol,
+                                                ReportDetails.hdl_cholesterol, ReportDetails.ldl_cholesterol, ReportDetails.triglycerides,
+                                                ReportDetails.creatinine, ReportDetails.egfr, ReportDetails.ast_sgot, ReportDetails.alt_sgpt,
+                                                ReportDetails.tsh, ReportDetails.vitamin_d)
                                          .join(UploadedFile, UploadedFile.id == ReportDetails.file_id)
                                          .where(UploadedFile.user_id == user_id)
                                          .order_by(desc(UploadedFile.upload_date), desc(UploadedFile.id))
@@ -634,26 +664,37 @@ async def compare_reports(current_user=Depends(get_current_user), db: AsyncSessi
             recent_report_data = is_reports[0]
             old_report_data = is_reports[1]
             comparison_query = await db.execute(select(ReportComparison).where(ReportComparison.user_id == user_id,
-                                                                               ReportComparison.previous_report_id == old_report_data.id, ReportComparison.new_report_id == recent_report_data.id))
+                                                                               ReportComparison.previous_report_id == old_report_data.id,
+                                                                               ReportComparison.new_report_id == recent_report_data.id))
             is_old_comparison = comparison_query.mappings().first()
 
             if is_old_comparison is None:
-                summary = generate_comparison_summary(
+                summary_response = await generate_comparison_summary(
                     old_report_data, recent_report_data)
 
-                if summary is None:
+                if summary_response is None:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="failed to generate summary !")
                 else:
                     new_comparison = ReportComparison(user_id=user_id,
-                                                      previous_report_id=old_report_data.id, new_report_id=recent_report_data.id, summary=summary)
+                                                      previous_report_id=old_report_data.id, new_report_id=recent_report_data.id,
+                                                      summary=summary_response.summary, key_changes=summary_response.key_changes,
+                                                      recommendations=summary_response.recommendations, follow_up=summary_response.follow_up)
                     db.add(new_comparison)
                     await db.commit()
                     await db.refresh(new_comparison)
 
-                    return {"message": "reports comparison summary generated successfully !", "comparison_summary": summary}
+                    return {"message": "reports comparison summary generated successfully !",
+                            "comparison_summary": summary_response.summary,
+                            "key_changes": summary_response.key_changes,
+                            "recommendations": summary_response.recommendations,
+                            "follow_up": summary_response.follow_up}
             else:
-                return {"message": "comparison summary already exist !"}
+                return {"message": "comparison summary already exist !",
+                        "comparison_summary": is_old_comparison.summary,
+                        "key_changes": is_old_comparison.key_changes,
+                        "recommendations": is_old_comparison.recommendations,
+                        "follow_up": is_old_comparison.follow_up}
 
     except:
         raise HTTPException(

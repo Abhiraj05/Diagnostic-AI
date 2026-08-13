@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Relationship
 from db.db_connection import Base
 
@@ -28,6 +29,9 @@ class ReportComparison(Base):
                            index=True)
 
     summary = Column(Text, nullable=False)
+    key_changes = Column(JSONB, nullable=True)
+    recommendations = Column(JSONB, nullable=True)
+    follow_up = Column(JSONB, nullable=True)
 
     user = Relationship(
         "User",
