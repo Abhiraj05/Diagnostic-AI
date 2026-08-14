@@ -1,15 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [name,setName]=useState("")
+  const [name, setName] = useState("");
 
   useEffect(() => {
     const user_name = localStorage.getItem("user_name");
-    setName(user_name)
+    setName(user_name);
   }, []);
 
   const links = [
@@ -59,7 +59,9 @@ export default function Sidebar() {
       </Link>
       <div className="p-6 border-t border-slate-800 bg-slate-950/50">
         <div className="flex items-center gap-3 px-2">
-          <div className="rounded-4xl border text-lg font-bold bg-cyan-400 text-background border-slate-400 px-2">{name[0]}</div>
+          <div className="rounded-4xl border text-lg font-bold bg-cyan-400 text-background border-slate-400 px-2">
+            {name[0]}
+          </div>
           <div className="overflow-hidden">
             <p className="font-bold text-base text-white truncate">{name}</p>
           </div>

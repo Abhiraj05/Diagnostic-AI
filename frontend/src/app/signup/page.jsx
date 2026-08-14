@@ -9,6 +9,8 @@ import axios from "axios";
 export default function SignUpPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,7 +32,7 @@ export default function SignUpPage() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setIsLoading(true);
     if (!formData.name) {
       alert("please enter your name !");
       return;
@@ -66,6 +68,8 @@ export default function SignUpPage() {
       console.log(error);
       alert("registration failed !");
       return;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -190,25 +194,63 @@ export default function SignUpPage() {
                   Password
                 </label>
 
-                <input
-                  type="password"
-                  required
-                  name="password"
-                  placeholder="Minimum 8 characters"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    name="password"
+                    placeholder="Minimum 8 characters"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 pr-20 text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-cyan-400 hover:text-cyan-300"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                disabled={isLoading}
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 transition={{ duration: 0.15 }}
-                className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-xl font-bold transition duration-200 shadow-lg shadow-cyan-500/10 mt-4"
+                className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-700 disabled:cursor-not-allowed text-slate-900 rounded-xl font-bold transition duration-200 shadow-lg shadow-cyan-500/10 mt-4 flex items-center justify-center gap-2"
               >
-                Create Account
+                {isLoading ? (
+                  <>
+                    <svg
+                      className="w-5 h-5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      />
+                      <path
+                        className="opacity-90"
+                        d="M21 12a9 9 0 0 1-9 9"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </motion.button>
             </form>
 

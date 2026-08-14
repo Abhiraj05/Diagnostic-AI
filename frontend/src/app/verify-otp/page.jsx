@@ -9,6 +9,7 @@ import axios from "axios";
 export default function EnterOtp() {
   const router = useRouter();
   const [show, setShow] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     otp: "",
   });
@@ -33,6 +34,7 @@ export default function EnterOtp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (!formData.otp) {
       alert("please enter OTP !");
@@ -56,6 +58,8 @@ export default function EnterOtp() {
     } catch (error) {
       console.log(error);
       alert("invalid or expired OTP !");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -156,11 +160,39 @@ export default function EnterOtp() {
           {show && (
             <motion.button
               type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-slate-900 hover:bg-cyan-400 transition shadow-lg shadow-cyan-500/20"
+              disabled={isLoading}
+              whileHover={{ scale: isLoading ? 1 : 1.02 }}
+              whileTap={{ scale: isLoading ? 1 : 0.98 }}
+              className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-slate-900 hover:bg-cyan-400 disabled:bg-cyan-700 disabled:cursor-not-allowed transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
             >
-              Verify OTP
+              {isLoading ? (
+                <>
+                  <svg
+                    className="w-5 h-5 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                    <path
+                      className="opacity-90"
+                      d="M21 12a9 9 0 0 1-9 9"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Verifying...
+                </>
+              ) : (
+                "Verify OTP"
+              )}
             </motion.button>
           )}
         </form>

@@ -8,6 +8,7 @@ import axios from "axios";
 
 export default function ForgotPassword() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_email: "",
   });
@@ -18,6 +19,7 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (!formData.user_email) {
       alert("please enter your email !");
@@ -38,6 +40,8 @@ export default function ForgotPassword() {
       console.log(error);
       alert("failed to send reset email !");
       return;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -125,15 +129,40 @@ export default function ForgotPassword() {
           </div>
 
           <motion.button
-            className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-slate-900 hover:bg-cyan-400 transition shadow-lg shadow-cyan-500/20"
-            whileHover={{
-              scale: 1.02,
-            }}
-            whileTap={{
-              scale: 0.98,
-            }}
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-slate-900 hover:bg-cyan-400 disabled:bg-cyan-700 disabled:cursor-not-allowed transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+            whileHover={{ scale: isLoading ? 1 : 1.02 }}
+            whileTap={{ scale: isLoading ? 1 : 0.98 }}
           >
-            Send Reset Link
+            {isLoading ? (
+              <>
+                <svg
+                  className="w-5 h-5 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                  <path
+                    className="opacity-90"
+                    d="M21 12a9 9 0 0 1-9 9"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Sending...
+              </>
+            ) : (
+              "Send Reset Link"
+            )}
           </motion.button>
         </motion.form>
 
