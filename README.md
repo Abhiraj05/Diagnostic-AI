@@ -78,7 +78,7 @@ Email functionality can be used for:
 ## Tech Stack
 
 - **Frontend:** Next.js, Tailwind CSS
-- **Backend:** FastAPI
+- **Backend:** FastAPI, REST API, WebSocket
 - **Database:** PostgreSQL
 - **AI/RAG:** LangChain, ChromaDB, Gemini
 - **OCR:** EasyOCR
