@@ -94,7 +94,7 @@ Email functionality can be used for:
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/Abhiraj05/](https://github.com/Abhiraj05/Diagnostic-AI
+git clone https://github.com/Abhiraj05/Diagnostic-AI
 ```
 
 ### Prerequisites
