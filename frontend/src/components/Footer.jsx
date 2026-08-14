@@ -16,6 +16,10 @@ export default function Footer({ setLoading }) {
     }, 2000);
   };
 
+  const handleNavigateWithOutputLoader = (route) => {
+    router.push(route);
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem("access_token");
     setToken(storedToken);
