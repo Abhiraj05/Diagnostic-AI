@@ -4,7 +4,7 @@ import Image from "next/image";
 import Loader from "@/components/Loader";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import bloodReportImg from "@/assets/bloodtestimg.jpg";
@@ -18,6 +18,10 @@ export default function Page() {
     router.push(route);
   };
 
+  useEffect(() => {
+    const storedToken = localStorage.getItem("access_token");
+    setToken(storedToken);
+  }, []);
   return (
     <>
       {loading && <Loader />}

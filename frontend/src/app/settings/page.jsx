@@ -247,7 +247,7 @@ export default function Page() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  Delete
+                  Delete Account
                 </motion.button>
 
                 <motion.button

@@ -16,6 +16,10 @@ export default function Navbar({ setLoading }) {
     }, 2000);
   };
 
+  const handleNavigateWithOutputLoader = (route) => {
+    router.push(route);
+  };
+  
   const logOut = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user_name");

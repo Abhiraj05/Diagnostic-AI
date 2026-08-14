@@ -33,7 +33,7 @@ export default function ReportAnalysisPage() {
   const getReportData = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8000/analysis/get-report",
+        "http://127.0.0.1:8000/analysis/get-reports",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
@@ -333,8 +333,93 @@ export default function ReportAnalysisPage() {
                       </h2>
 
                       <p className="leading-7 text-slate-400 text-justify text-lg">
-                        {currentReport.summary_text || "No summary available."}
+                        {currentReport.summary || "No summary available."}
                       </p>
+
+                      <div className="mt-8">
+                        <h3 className="mb-4 text-xl font-semibold text-white">
+                          Key Findings
+                        </h3>
+
+                        {currentReport.key_findings?.length > 0 ? (
+                          <ul className="space-y-3">
+                            {currentReport.key_findings.map(
+                              (finding, index) => (
+                                <li
+                                  key={index}
+                                  className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-slate-300"
+                                >
+                                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-xs text-cyan-400">
+                                    ✓
+                                  </span>
+
+                                  <span>{finding}</span>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-slate-500">
+                            No key findings available.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-8">
+                        <h3 className="mb-4 text-xl font-semibold text-white">
+                          Recommendations
+                        </h3>
+
+                        {currentReport.recommendations?.length > 0 ? (
+                          <ul className="space-y-3">
+                            {currentReport.recommendations.map(
+                              (recommendation, index) => (
+                                <li
+                                  key={index}
+                                  className="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-slate-300"
+                                >
+                                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-xs text-blue-400">
+                                    →
+                                  </span>
+
+                                  <span>{recommendation}</span>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-slate-500">
+                            No recommendations available.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-8">
+                        <h3 className="mb-4 text-xl font-semibold text-white">
+                          Follow Up
+                        </h3>
+
+                        {currentReport.follow_up?.length > 0 ? (
+                          <ul className="space-y-3">
+                            {currentReport.follow_up.map((item, index) => (
+                              <li
+                                key={index}
+                                className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-slate-300"
+                              >
+                                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs text-amber-400">
+                                  !
+                                </span>
+
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-slate-500">
+                            No follow-up required.
+                          </p>
+                        )}
+                      </div>
                     </motion.div>
                   </div>
 

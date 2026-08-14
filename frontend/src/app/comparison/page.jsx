@@ -75,6 +75,9 @@ export default function ReportComparisonPage() {
   const [profile, setProfile] = useState([]);
   const [reports, setReports] = useState([]);
   const [summary, setSummary] = useState("Not Available");
+  const [keyChanges, setKeyChanges] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [followUp, setFollowUp] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -91,6 +94,10 @@ export default function ReportComparisonPage() {
 
       setReports(response.data.latest_reports || []);
       setSummary(response.data.comparison_summary || "Not Available");
+      setKeyChanges(response.data.key_changes || []);
+      setRecommendations(response.data.recommendations || []);
+      setFollowUp(response.data.follow_up || []);
+  
     } catch (error) {
       console.log(error);
     }
@@ -108,7 +115,10 @@ export default function ReportComparisonPage() {
         },
       );
 
-      setSummary(response.data.comparison_summary);
+      setSummary(response.data.comparison_summary || "Not Available");
+      setKeyChanges(response.data.key_changes || []);
+      setRecommendations(response.data.recommendations || []);
+      setFollowUp(response.data.follow_up || []);
     } catch (error) {
       console.log(error);
     }
@@ -663,7 +673,7 @@ export default function ReportComparisonPage() {
               </h2>
 
               <motion.p
-                className="mt-3 text-slate-400 leading-7 text-lg text-justify"
+                className="mt-3 text-slate-300 leading-7 text-lg text-justify"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{
@@ -671,8 +681,91 @@ export default function ReportComparisonPage() {
                   delay: 0.8,
                 }}
               >
-                {summary}
+                {summary || "Not Available"}
               </motion.p>
+
+              {keyChanges.length > 0 && (
+                <motion.div
+                  className="mt-6"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 1 }}
+                >
+                  <h3 className="text-md font-semibold text-cyan-400 mb-3">
+                    Key Changes
+                  </h3>
+
+                  <ul className="space-y-3">
+                    {keyChanges.map((change, index) => (
+                      <motion.li
+                        key={index}
+                        className="flex gap-3 text-slate-400 leading-6"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: 1 + index * 0.1,
+                        }}
+                      >
+                        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-cyan-400" />
+                        <span>{change}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {recommendations.length > 0 && (
+                <motion.div
+                  className="mt-6 border-t border-slate-700 pt-6"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 1.2 }}
+                >
+                  <h3 className="text-md font-semibold text-cyan-400 mb-3">
+                    Recommendations
+                  </h3>
+
+                  <ul className="space-y-3">
+                    {recommendations.map((recommendation, index) => (
+                      <motion.li
+                        key={index}
+                        className="flex gap-3 text-slate-400 leading-6"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: 1.2 + index * 0.1,
+                        }}
+                      >
+                        <span className="mt-1 text-cyan-400">✓</span>
+                        <span>{recommendation}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {followUp.length > 0 && (
+                <motion.div
+                  className="mt-6 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 1.4 }}
+                >
+                  <h3 className="text-md font-semibold text-cyan-400 mb-2">
+                    Follow Up
+                  </h3>
+
+                  <ul className="space-y-2">
+                    {followUp.map((item, index) => (
+                      <li key={index} className="text-slate-400 leading-6">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </main>
