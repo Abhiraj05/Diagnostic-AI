@@ -570,7 +570,7 @@ async def delete_chat(id: int, current_user=Depends(get_current_user), db: Async
 
 
 # gets all reports of user
-@app.get("/analysis/get-report")
+@app.get("/analysis/get-reports")
 async def get_reports(current_user=Depends(get_current_user), db: AsyncSession = Depends(create_db_connection)):
     user_id = current_user.id
 
@@ -629,12 +629,13 @@ async def get_reports(current_user=Depends(get_current_user), db: AsyncSession =
                 return {"message": "latest reports fetched successfully !", "latest_reports": is_reports}
             else:
                 old_comparison_data = is_old_comparison["ReportComparison"]
+
                 return {"message": "latest reports and  comparison summary fetched successfully !",
                         "latest_reports": is_reports,
                         "comparison_summary": old_comparison_data.summary,
-                        "key_changes": is_old_comparison.key_changes,
-                        "recommendations": is_old_comparison.recommendations,
-                        "follow_up": is_old_comparison.follow_up}
+                        "key_changes": old_comparison_data.key_changes,
+                        "recommendations": old_comparison_data.recommendations,
+                        "follow_up": old_comparison_data.follow_up}
 
     except:
         raise HTTPException(
@@ -694,11 +695,13 @@ async def compare_reports(current_user=Depends(get_current_user), db: AsyncSessi
                             "recommendations": summary_response.recommendations,
                             "follow_up": summary_response.follow_up}
             else:
+                old_comparison_data = is_old_comparison["ReportComparison"]
+
                 return {"message": "comparison summary already exist !",
-                        "comparison_summary": is_old_comparison.summary,
-                        "key_changes": is_old_comparison.key_changes,
-                        "recommendations": is_old_comparison.recommendations,
-                        "follow_up": is_old_comparison.follow_up}
+                        "comparison_summary": old_comparison_data.summary,
+                        "key_changes": old_comparison_data.key_changes,
+                        "recommendations": old_comparison_data.recommendations,
+                        "follow_up": old_comparison_data.follow_up}
 
     except:
         raise HTTPException(
