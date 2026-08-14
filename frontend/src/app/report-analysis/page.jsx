@@ -139,19 +139,6 @@ export default function ReportAnalysisPage() {
             analysis.
           </motion.p>
 
-          <motion.div
-            className="mx-auto mt-7 max-w-sm rounded-xl border border-slate-800 bg-slate-950 px-5 py-4"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-          >
-            <p className="text-sm text-slate-500">Analysis requires</p>
-
-            <p className="mt-1 text-sm font-medium text-cyan-400">
-              At least 1 report
-            </p>
-          </motion.div>
-
           <motion.button
             onClick={() => router.push("/document-chat")}
             className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-6 py-3 text-sm font-medium text-slate-300 transition hover:border-cyan-500/50 hover:bg-slate-700 hover:text-cyan-400"
